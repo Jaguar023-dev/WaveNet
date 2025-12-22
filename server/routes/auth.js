@@ -1,362 +1,159 @@
-// server/routes/auth.js - SIMPLIFIED TEST VERSION
+// server/routes/auth.js - DEBUG VERSION
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
-const { check, validationResult } = require('express-validator');
 
-// Hardcoded admin user - NO HASHING
-const HARDCODED_ADMIN = {
+// SUPER SIMPLE ADMIN - Let's make this foolproof
+const ADMIN_USER = {
   id: 'admin-001',
   firstName: 'Kenyan',
   lastName: 'Jaguar',
-  username: 'kenyan_jaguar',
+  username: 'admin',
   email: 'trustynewsnetworkkenya@gmail.com',
-  password: 'Derrick9786', // Plain text for testing
-  role: 'admin',
-  profilePicture: {
-    url: '/default-admin-avatar.png',
-    publicId: ''
-  },
-  isActive: true,
-  isVerified: true,
-  createdAt: new Date('2024-01-01')
+  password: 'Derrick9786',
+  role: 'admin'
 };
 
-// Demo users for testing
-const DEMO_USERS = [
-  {
-    id: 'user-001',
-    firstName: 'John',
-    lastName: 'Doe',
-    username: 'johndoe',
-    email: 'john@example.com',
-    password: 'password123',
-    role: 'user',
-    profilePicture: {
-      url: '/default-avatar.png',
-      publicId: ''
-    },
-    isActive: true,
-    isVerified: true,
-    createdAt: new Date('2024-01-01')
-  },
-  {
-    id: 'user-002',
-    firstName: 'Jane',
-    lastName: 'Smith',
-    username: 'janesmith',
-    email: 'jane@example.com',
-    password: 'password123',
-    role: 'user',
-    profilePicture: {
-      url: '/default-avatar.png',
-      publicId: ''
-    },
-    isActive: true,
-    isVerified: true,
-    createdAt: new Date('2024-01-02')
-  }
-];
+// Keep only admin for now
+let users = [ADMIN_USER];
 
-// In-memory storage
-let users = [...DEMO_USERS, HARDCODED_ADMIN];
-
-// @route   POST /api/auth/login
-// @desc    Authenticate user & get token
-// @access  Public
-router.post('/login', [
-  check('email', 'Please include a valid email').isEmail(),
-  check('password', 'Password is required').exists()
-], async (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
-  }
-
+// SIMPLE LOGIN - No validation, just check
+router.post('/login', (req, res) => {
+  console.log('=== LOGIN ATTEMPT ===');
+  console.log('Request body:', JSON.stringify(req.body));
+  console.log('Email received:', req.body.email);
+  console.log('Password received:', req.body.password ? '***' : 'MISSING');
+  
   const { email, password } = req.body;
-
-  try {
-    console.log(`Login attempt: ${email}`);
-    
-    // Find user (case-insensitive email check)
-    const user = users.find(u => 
-      u.email.toLowerCase() === email.toLowerCase()
-    );
-    
-    if (!user) {
-      console.log(`User not found: ${email}`);
-      return res.status(400).json({ 
-        success: false,
-        msg: 'Invalid email or password' 
-      });
-    }
-    
-    // Check password (plain text comparison for testing)
-    if (user.password !== password) {
-      console.log(`Password mismatch for: ${email}`);
-      return res.status(400).json({ 
-        success: false,
-        msg: 'Invalid email or password' 
-      });
-    }
-    
-    // Check if user is active
-    if (user.isActive === false) {
-      return res.status(403).json({ 
-        success: false,
-        msg: 'Account is deactivated' 
-      });
-    }
-    
-    console.log(`Login successful: ${email} (${user.role})`);
-    
-    // Create JWT payload
-    const payload = {
-      user: {
-        id: user.id,
-        role: user.role || 'user',
-        email: user.email
-      }
-    };
-
-    // Sign token
-    const token = jwt.sign(
-      payload,
-      process.env.JWT_SECRET || 'test-secret-key-123',
-      { expiresIn: '30d' } // 30 days for testing
-    );
-
-    // Return user data (without password)
-    const userResponse = { ...user };
-    delete userResponse.password;
-    
-    res.json({
-      success: true,
-      message: 'Login successful',
-      token,
-      user: userResponse
-    });
-
-  } catch (err) {
-    console.error('Login error:', err.message);
-    res.status(500).json({ 
-      success: false,
-      msg: 'Server error',
-      error: process.env.NODE_ENV === 'development' ? err.message : undefined
+  
+  if (!email || !password) {
+    console.log('❌ Missing email or password');
+    return res.status(400).json({ 
+      success: false, 
+      error: 'Email and password required',
+      received: { email: !!email, password: !!password }
     });
   }
-});
-
-// @route   POST /api/auth/register
-// @desc    Register user (testing only - no real registration)
-// @access  Public
-router.post('/register', [
-  check('firstName', 'First name is required').not().isEmpty(),
-  check('lastName', 'Last name is required').not().isEmpty(),
-  check('email', 'Please include a valid email').isEmail(),
-  check('password', 'Please enter a password with 6 or more characters').isLength({ min: 6 }),
-  check('username', 'Username is required').not().isEmpty()
-], async (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
-  }
-
-  const { firstName, lastName, email, password, username } = req.body;
-
-  try {
-    console.log(`Registration attempt: ${email} (${username})`);
-    
-    // Check if trying to register as admin
-    if (email.toLowerCase() === HARDCODED_ADMIN.email.toLowerCase()) {
-      return res.status(400).json({ 
-        success: false,
-        msg: 'This email is reserved for system administration' 
-      });
-    }
-    
-    // Check if user exists
-    const existingUser = users.find(u => 
-      u.email.toLowerCase() === email.toLowerCase() || 
-      u.username.toLowerCase() === username.toLowerCase()
-    );
-    
-    if (existingUser) {
-      const conflict = existingUser.email.toLowerCase() === email.toLowerCase() 
-        ? 'Email already registered' 
-        : 'Username already taken';
-      
-      return res.status(400).json({ 
-        success: false,
-        msg: conflict 
-      });
-    }
-    
-    // Create new user (in memory only)
-    const newUser = {
-      id: `user-${Date.now()}`,
-      firstName,
-      lastName,
-      username,
-      email,
-      password, // Plain text for testing
-      profilePicture: {
-        url: '/default-avatar.png',
-        publicId: ''
-      },
-      role: 'user',
-      isActive: true,
-      isVerified: false,
-      createdAt: new Date(),
-      friends: [],
-      pendingFriendRequests: [],
-      sentFriendRequests: []
-    };
-    
-    // Add to users array
-    users.push(newUser);
-    
-    console.log(`Registration successful: ${email}`);
-    
-    // Create JWT token
-    const payload = {
-      user: {
-        id: newUser.id,
-        role: newUser.role,
-        email: newUser.email
-      }
-    };
-    
-    const token = jwt.sign(
-      payload,
-      process.env.JWT_SECRET || 'test-secret-key-123',
-      { expiresIn: '30d' }
-    );
-    
-    // Return user data (without password)
-    const userResponse = { ...newUser };
-    delete userResponse.password;
-    
-    res.status(201).json({
-      success: true,
-      message: 'Registration successful',
-      token,
-      user: userResponse
-    });
-
-  } catch (err) {
-    console.error('Registration error:', err.message);
-    res.status(500).json({ 
-      success: false,
-      msg: 'Server error',
-      error: process.env.NODE_ENV === 'development' ? err.message : undefined
+  
+  // Case insensitive check
+  const user = users.find(u => 
+    u.email.toLowerCase() === email.toLowerCase().trim()
+  );
+  
+  console.log('Found user:', user ? 'YES' : 'NO');
+  
+  if (!user) {
+    console.log('❌ User not found in database');
+    console.log('Available users:', users.map(u => u.email));
+    return res.status(400).json({ 
+      success: false, 
+      error: 'User not found',
+      availableUsers: users.map(u => ({ email: u.email, role: u.role }))
     });
   }
-});
-
-// @route   GET /api/auth/me
-// @desc    Get current user
-// @access  Private
-router.get('/me', (req, res) => {
-  try {
-    // Get token from header
-    const token = req.headers.authorization?.split(' ')[1];
-    
-    if (!token) {
-      return res.status(401).json({ 
-        success: false,
-        msg: 'No token provided' 
-      });
-    }
-    
-    // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'test-secret-key-123');
-    
-    // Find user
-    const user = users.find(u => u.id === decoded.user.id);
-    
-    if (!user) {
-      return res.status(404).json({ 
-        success: false,
-        msg: 'User not found' 
-      });
-    }
-    
-    // Return user without password
-    const userResponse = { ...user };
-    delete userResponse.password;
-    
-    res.json({
-      success: true,
-      user: userResponse
-    });
-    
-  } catch (err) {
-    if (err.name === 'JsonWebTokenError') {
-      return res.status(401).json({ 
-        success: false,
-        msg: 'Invalid token' 
-      });
-    }
-    
-    if (err.name === 'TokenExpiredError') {
-      return res.status(401).json({ 
-        success: false,
-        msg: 'Token expired' 
-      });
-    }
-    
-    console.error('Get me error:', err.message);
-    res.status(500).json({ 
-      success: false,
-      msg: 'Server error' 
+  
+  console.log('Expected password:', user.password);
+  console.log('Received password:', password);
+  console.log('Password match:', user.password === password);
+  
+  if (user.password !== password) {
+    console.log('❌ Password mismatch');
+    return res.status(400).json({ 
+      success: false, 
+      error: 'Incorrect password',
+      hint: `Expected: ${user.password}, Got: ${password}`
     });
   }
-});
-
-// @route   GET /api/auth/test-users
-// @desc    Get list of test users (for testing only)
-// @access  Public
-router.get('/test-users', (req, res) => {
-  // Return users without passwords
-  const safeUsers = users.map(user => {
-    const safeUser = { ...user };
-    delete safeUser.password;
-    return safeUser;
-  });
+  
+  console.log('✅ Login successful!');
+  
+  // Create token
+  const token = jwt.sign(
+    { 
+      userId: user.id,
+      email: user.email,
+      role: user.role 
+    },
+    'test-secret-key-123',
+    { expiresIn: '30d' }
+  );
   
   res.json({
     success: true,
-    users: safeUsers,
-    testCredentials: {
-      admin: {
-        email: 'trustynewsnetworkkenya@gmail.com',
-        password: 'Derrick9786',
-        role: 'admin'
-      },
-      regularUsers: [
-        {
-          email: 'john@example.com',
-          password: 'password123',
-          role: 'user'
-        },
-        {
-          email: 'jane@example.com',
-          password: 'password123',
-          role: 'user'
-        }
-      ]
+    message: 'Login successful!',
+    token,
+    user: {
+      id: user.id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      role: user.role,
+      username: user.username
     }
   });
 });
 
-// @route   POST /api/auth/logout
-// @desc    Logout user (client-side token removal)
-// @access  Public
-router.post('/logout', (req, res) => {
+// Test endpoint to see what's registered
+router.get('/debug', (req, res) => {
+  res.json({
+    serverTime: new Date().toISOString(),
+    adminCredentials: {
+      email: ADMIN_USER.email,
+      password: ADMIN_USER.password,
+      note: 'Use exactly these values'
+    },
+    allUsers: users.map(u => ({
+      email: u.email,
+      role: u.role,
+      passwordHint: `First 3 chars: ${u.password.substring(0, 3)}...`
+    })),
+    instructions: 'POST to /api/auth/login with above credentials'
+  });
+});
+
+// Simple register endpoint
+router.post('/register', (req, res) => {
+  const { email, password, firstName, lastName } = req.body;
+  
+  // Check if already exists
+  if (users.some(u => u.email.toLowerCase() === email.toLowerCase())) {
+    return res.status(400).json({ 
+      success: false, 
+      error: 'User already exists' 
+    });
+  }
+  
+  const newUser = {
+    id: `user-${Date.now()}`,
+    firstName: firstName || 'User',
+    lastName: lastName || 'Test',
+    username: email.split('@')[0],
+    email,
+    password,
+    role: 'user'
+  };
+  
+  users.push(newUser);
+  
+  // Create token
+  const token = jwt.sign(
+    { userId: newUser.id, email: newUser.email, role: newUser.role },
+    'test-secret-key-123',
+    { expiresIn: '30d' }
+  );
+  
   res.json({
     success: true,
-    message: 'Logout successful (client should remove token)'
+    message: 'Registration successful',
+    token,
+    user: {
+      id: newUser.id,
+      firstName: newUser.firstName,
+      lastName: newUser.lastName,
+      email: newUser.email,
+      role: newUser.role,
+      username: newUser.username
+    }
   });
 });
 
