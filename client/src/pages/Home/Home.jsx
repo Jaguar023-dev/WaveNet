@@ -15,7 +15,7 @@ import {
   MapPin,
   Camera,
   Feeling,
-  LiveVideo,
+
   Photo,
   MoreHorizontal,
   Share2,
