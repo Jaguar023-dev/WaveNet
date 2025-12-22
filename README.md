@@ -193,7 +193,7 @@ text
 
 1. **Clone the repository**
 ```bash
-git clone https://github.com/yourusername/wavenet.git
+git clone https://github.com/Jaguar023-dev/WaveNet.git
 cd wavenet
 Set up environment variables
 
