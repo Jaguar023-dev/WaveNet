@@ -1,0 +1,327 @@
+.right-sidebar {
+  width: 300px;
+  flex-shrink: 0;
+  padding-left: 12px;
+}
+
+.sidebar-section {
+  background: white;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.section-header h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 17px;
+  font-weight: 600;
+  color: #050505;
+  margin: 0;
+}
+
+.hide-btn {
+  background: none;
+  border: none;
+  color: #65676b;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.hide-btn:hover {
+  text-decoration: underline;
+}
+
+/* Birthdays */
+.birthdays-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.birthday-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+
+.birthday-item:hover {
+  background: #f0f2f5;
+}
+
+.birthday-icon {
+  font-size: 24px;
+}
+
+.birthday-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.birthday-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #050505;
+}
+
+.birthday-date {
+  font-size: 12px;
+  color: #65676b;
+}
+
+.birthday-wish-btn {
+  background: #1b74e4;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+/* Sponsored */
+.sponsored-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sponsored-item {
+  display: flex;
+  gap: 12px;
+  padding: 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.sponsored-item:hover {
+  background: #f0f2f5;
+}
+
+.sponsored-image {
+  width: 80px;
+  height: 80px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  flex-shrink: 0;
+}
+
+.sponsored-info {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.sponsored-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #050505;
+  margin-bottom: 4px;
+}
+
+.sponsored-company {
+  font-size: 12px;
+  color: #65676b;
+}
+
+/* Contacts */
+.contact-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.contact-action-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: #f0f2f5;
+  color: #65676b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.contact-action-btn:hover {
+  background: #e4e6eb;
+}
+
+.contacts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.contact-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.contact-item:hover {
+  background: #f0f2f5;
+}
+
+.contact-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #e4e6eb;
+  position: relative;
+}
+
+.status-indicator {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 2px solid white;
+}
+
+.status-indicator.online {
+  background: #31a24c;
+}
+
+.status-indicator.offline {
+  background: #bcc0c4;
+}
+
+.contact-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #050505;
+}
+
+.see-all-contacts {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background: none;
+  border: none;
+  color: #1b74e4;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 8px;
+  width: 100%;
+  justify-content: center;
+}
+
+.see-all-contacts:hover {
+  background: #f0f2f5;
+}
+
+/* Create Room */
+.create-room {
+  background: white;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.create-room-btn {
+  width: 100%;
+  padding: 12px;
+  background: #f0f2f5;
+  border: 2px dashed #bcc0c4;
+  border-radius: 8px;
+  color: #050505;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.create-room-btn:hover {
+  background: #e4e6eb;
+}
+
+/* Groups Suggestions */
+.groups-suggestions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.group-suggestion {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+
+.group-suggestion:hover {
+  background: #f0f2f5;
+}
+
+.group-icon {
+  font-size: 24px;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: #e4e6eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.group-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.group-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #050505;
+  margin-bottom: 2px;
+}
+
+.group-members {
+  font-size: 12px;
+  color: #65676b;
+}
+
+.join-group-btn {
+  background: #1b74e4;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.join-group-btn:hover {
+  background: #166fe5;
+}
