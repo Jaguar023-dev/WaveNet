@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { register, clearError } from '../../store/slices/authSlice';
-import { User, Mail, Lock, Calendar, Transgender } from 'react-feather';
+import { User, Mail, Lock, Calendar, Users as Transgender } from 'react-feather';
 import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
 import './Auth.css';
