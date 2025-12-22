@@ -24,7 +24,8 @@
     "express-rate-limit": "^6.10.0",
     "helmet": "^7.0.0",
     "compression": "^1.7.4",
-    "mongoose-paginate-v2": "^1.7.3"
+    "mongoose-paginate-v2": "^1.7.3",
+    "streamifier": "^0.1.1"  // ← ADD THIS LINE
   },
   "devDependencies": {
     "nodemon": "^3.0.1",
