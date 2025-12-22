@@ -4,7 +4,7 @@ import {
   Home as HomeIcon, 
   Users, 
   Video, 
-  Store, 
+  ShoppingBag, 
   Bell, 
   MessageCircle,
   Search,
