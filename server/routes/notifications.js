@@ -1,4 +1,4 @@
-// server/routes/notifications.js
+// server/routes/notifications.js - FIXED
 const express = require('express');
 const router = express.Router();
 const Notification = require('../models/Notification');
@@ -216,8 +216,8 @@ const getDefaultLink = (type, post, sender) => {
   }
 };
 
-// Export both router and helper function
-module.exports = {
-  router,
-  createNotification
-};
+// Export ONLY the router
+module.exports = router;
+
+// If you need to export the helper function for other files,
+// create a separate file or use a different approach
