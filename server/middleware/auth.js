@@ -1,5 +1,10 @@
+// server/middleware/auth.js
 const jwt = require('jsonwebtoken');
-const User = require('../models/User');
+// Remove User import since we don't have DB
+// const User = require('../models/User');
+
+// Hardcoded admin info (same as in auth.js)
+const HARDCODED_ADMIN_ID = 'admin-001';
 
 const protect = async (req, res, next) => {
   let token;
@@ -11,19 +16,13 @@ const protect = async (req, res, next) => {
       token = req.headers.authorization.split(' ')[1];
       
       // Verify token
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
       
-      // Get user from token
-      req.user = await User.findById(decoded.id).select('-password');
-      
-      if (!req.user) {
-        return res.status(401).json({ message: 'User not found' });
-      }
-      
-      // Check if user is active
-      if (!req.user.isActive) {
-        return res.status(401).json({ message: 'User account is deactivated' });
-      }
+      // Set user from token (no DB lookup needed)
+      req.user = {
+        id: decoded.user.id,
+        role: decoded.user.role || 'user'
+      };
       
       next();
     } catch (error) {
