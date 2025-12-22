@@ -21,7 +21,7 @@ const postRoutes = require('./routes/posts');
 const groupRoutes = require('./routes/groups');
 const messageRoutes = require('./routes/messages');
 const notificationRoutes = require('./routes/notifications');
-const adminRoutes = require('./routes/admin'); // Added admin routes
+
 
 // Initialize Express app
 const app = express();
