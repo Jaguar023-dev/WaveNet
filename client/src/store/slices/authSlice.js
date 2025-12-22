@@ -88,4 +88,26 @@ const authSlice = createSlice({
         state.loading = false;
         state.user = action.payload;
         state.isAuthenticated = true;
-     
+      })
+      .addCase(register.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      // Get Current User
+      .addCase(getCurrentUser.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(getCurrentUser.fulfilled, (state, action) => {
+        state.loading = false;
+        state.user = action.payload;
+        state.isAuthenticated = true;
+      })
+      .addCase(getCurrentUser.rejected, (state) => {
+        state.loading = false;
+        state.isAuthenticated = false;
+      });
+  },
+});
+
+export const { logout, clearError } = authSlice.actions;
+export default authSlice.reducer;
