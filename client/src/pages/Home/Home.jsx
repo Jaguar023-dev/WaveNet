@@ -10,7 +10,7 @@ import {
   Search,
   Filter,
   TrendingUp,
-  Newspaper,
+  FileText as Newspaper,  
   Calendar,
   MapPin,
   Camera,
