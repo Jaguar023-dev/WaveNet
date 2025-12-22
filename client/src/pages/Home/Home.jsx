@@ -14,9 +14,8 @@ import {
   Calendar,
   MapPin,
   Camera,
-  Feeling,
-
-  Photo,
+  Smile as Feeling,  
+  Image as Photo,  
   MoreHorizontal,
   Share2,
   Send,
