@@ -1,10 +1,5 @@
-// server/middleware/auth.js
+// server/middleware/auth.js - SIMPLIFIED
 const jwt = require('jsonwebtoken');
-// Remove User import since we don't have DB
-// const User = require('../models/User');
-
-// Hardcoded admin info (same as in auth.js)
-const HARDCODED_ADMIN_ID = 'admin-001';
 
 const protect = async (req, res, next) => {
   let token;
@@ -16,17 +11,19 @@ const protect = async (req, res, next) => {
       token = req.headers.authorization.split(' ')[1];
       
       // Verify token
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'test-secret-key-123');
       
-      // Set user from token (no DB lookup needed)
+      // Set user from token
       req.user = {
         id: decoded.user.id,
-        role: decoded.user.role || 'user'
+        role: decoded.user.role || 'user',
+        email: decoded.user.email
       };
       
+      console.log(`Authenticated user: ${req.user.email} (${req.user.role})`);
       next();
     } catch (error) {
-      console.error('Token verification error:', error);
+      console.error('Token verification error:', error.message);
       
       if (error.name === 'JsonWebTokenError') {
         return res.status(401).json({ message: 'Invalid token' });
@@ -49,7 +46,11 @@ const admin = (req, res, next) => {
   if (req.user && req.user.role === 'admin') {
     next();
   } else {
-    res.status(403).json({ message: 'Not authorized as admin' });
+    res.status(403).json({ 
+      message: 'Not authorized as admin',
+      requiredRole: 'admin',
+      yourRole: req.user?.role || 'none'
+    });
   }
 };
 
@@ -57,7 +58,11 @@ const moderator = (req, res, next) => {
   if (req.user && (req.user.role === 'admin' || req.user.role === 'moderator')) {
     next();
   } else {
-    res.status(403).json({ message: 'Not authorized as moderator' });
+    res.status(403).json({ 
+      message: 'Not authorized as moderator',
+      requiredRole: 'admin or moderator',
+      yourRole: req.user?.role || 'none'
+    });
   }
 };
 
