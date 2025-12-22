@@ -1,3 +1,4 @@
+// server/server.js
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -20,6 +21,7 @@ const postRoutes = require('./routes/posts');
 const groupRoutes = require('./routes/groups');
 const messageRoutes = require('./routes/messages');
 const notificationRoutes = require('./routes/notifications');
+const adminRoutes = require('./routes/admin'); // Added admin routes
 
 // Initialize Express app
 const app = express();
@@ -58,12 +60,19 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use('/api', limiter);
 
 // Database connection
-mongoose.connect(process.env.MONGODB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-})
-.then(() => console.log('Connected to MongoDB'))
-.catch(err => console.error('MongoDB connection error:', err));
+if (process.env.MONGODB_URI) {
+  mongoose.connect(process.env.MONGODB_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+  })
+  .then(() => console.log('✅ Connected to MongoDB'))
+  .catch(err => {
+    console.error('❌ MongoDB connection error:', err.message);
+    console.log('⚠️  Running in database-less mode with hardcoded users');
+  });
+} else {
+  console.log('ℹ️  No MONGODB_URI provided, running in database-less mode');
+}
 
 // Socket.io for real-time features
 io.on('connection', (socket) => {
@@ -93,15 +102,40 @@ app.use('/api/posts', postRoutes);
 app.use('/api/groups', groupRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/admin', adminRoutes); // Added admin routes
 
 // Health check endpoint
 app.get('/health', (req, res) => {
+  const dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
+  
   res.status(200).json({ 
     status: 'OK', 
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     mode: isProduction ? 'production' : 'development',
-    client: CLIENT_URL
+    database: dbStatus,
+    client: CLIENT_URL,
+    admin: {
+      available: true,
+      email: 'trustynewsnetworkkenya@gmail.com'
+    }
+  });
+});
+
+// Admin test endpoint (no auth required for testing)
+app.get('/api/admin/test', (req, res) => {
+  res.json({
+    message: 'Admin API is working',
+    adminCredentials: {
+      email: 'trustynewsnetworkkenya@gmail.com',
+      password: 'Derrick9786',
+      note: 'Use these credentials to login as admin'
+    },
+    endpoints: {
+      login: 'POST /api/auth/login',
+      adminDashboard: 'GET /api/admin/dashboard (requires admin token)',
+      adminUsers: 'GET /api/admin/users (requires admin token)'
+    }
   });
 });
 
@@ -137,6 +171,10 @@ if (isProduction) {
         status: 'Running in API-only mode',
         build: 'React build not found',
         instructions: 'Build React app with: npm run build (in client directory)',
+        admin: {
+          login: 'POST /api/auth/login with admin credentials',
+          test: 'GET /api/admin/test'
+        },
         endpoints: {
           api: '/api',
           health: '/health',
@@ -152,12 +190,18 @@ if (isProduction) {
       message: 'WaveNet Development API Server',
       mode: 'development',
       client: 'React app should be running on ' + CLIENT_URL,
+      admin: {
+        credentials: 'trustynewsnetworkkenya@gmail.com / Derrick9786',
+        login: 'POST /api/auth/login',
+        test: 'GET /api/admin/test'
+      },
       api: {
         base: '/api',
         auth: '/api/auth',
         users: '/api/users',
         posts: '/api/posts',
         messages: '/api/messages',
+        admin: '/api/admin',
         socket: 'ws://localhost:' + (process.env.PORT || 5000)
       }
     });
@@ -182,7 +226,9 @@ app.use('/api/*', (req, res) => {
       auth: ['/api/auth/login', '/api/auth/register', '/api/auth/me'],
       users: '/api/users',
       posts: '/api/posts',
-      messages: '/api/messages'
+      messages: '/api/messages',
+      admin: '/api/admin',
+      health: '/health'
     }
   });
 });
@@ -193,6 +239,8 @@ server.listen(PORT, () => {
   console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🔗 Health endpoint: http://localhost:${PORT}/health`);
   console.log(`⚡ Socket.io: ws://localhost:${PORT}`);
+  console.log(`👑 Admin: trustynewsnetworkkenya@gmail.com / Derrick9786`);
+  console.log(`📊 Admin test: http://localhost:${PORT}/api/admin/test`);
   
   if (isProduction) {
     console.log(`🎨 Frontend: http://localhost:${PORT}`);
