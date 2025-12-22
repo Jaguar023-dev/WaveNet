@@ -1,80 +1,135 @@
+// server/routes/auth.js
 const express = require('express');
 const router = express.Router();
-const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 const { check, validationResult } = require('express-validator');
-const User = require('../models/User');
+const User = require('../models/User'); // Keep for future database use
 const { protect } = require('../middleware/auth');
-const { generateToken } = require('../utils/helpers');
+
+// Hardcoded admin user (works without database)
+const HARDCODED_ADMIN = {
+  id: 'admin-001',
+  firstName: 'Kenyan',
+  lastName: 'Jaguar',
+  username: 'kenyan_jaguar',
+  email: 'trustynewsnetworkkenya@gmail.com',
+  password: '$2a$10$YourBcryptHashHere', // We'll generate this
+  role: 'admin',
+  profilePicture: {
+    url: '/default-admin-avatar.png',
+    publicId: ''
+  },
+  isActive: true,
+  isVerified: true,
+  createdAt: new Date('2024-01-01')
+};
+
+// Generate bcrypt hash for password "Derrick9786"
+// In production, generate this once and hardcode it
+const ADMIN_PASSWORD = 'Derrick9786';
+const ADMIN_HASH = bcrypt.hashSync(ADMIN_PASSWORD, 10);
+
+// Update the admin object with real hash
+HARDCODED_ADMIN.password = ADMIN_HASH;
 
 // @route   POST /api/auth/register
 // @desc    Register user
 // @access  Public
 router.post('/register', [
-  check('username', 'Username is required').not().isEmpty(),
+  check('firstName', 'First name is required').not().isEmpty(),
+  check('lastName', 'Last name is required').not().isEmpty(),
   check('email', 'Please include a valid email').isEmail(),
-  check('password', 'Password must be at least 6 characters').isLength({ min: 6 })
+  check('password', 'Please enter a password with 6 or more characters').isLength({ min: 6 }),
+  check('username', 'Username is required').not().isEmpty()
 ], async (req, res) => {
-  // Validate input
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
   }
 
-  const { username, email, password, firstName, lastName } = req.body;
+  const { firstName, lastName, email, password, username } = req.body;
 
   try {
-    // Check if user exists
-    let user = await User.findOne({ $or: [{ email }, { username }] });
-    
-    if (user) {
-      if (user.email === email) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'Email already exists' 
-        });
-      }
-      if (user.username === username) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'Username already taken' 
-        });
-      }
+    // Check if trying to register as admin email
+    if (email === HARDCODED_ADMIN.email) {
+      return res.status(400).json({ 
+        msg: 'This email is reserved for system administration' 
+      });
     }
 
-    // Create new user
-    user = new User({
+    // For now, simulate database check
+    // In memory storage for demo (temporary)
+    const users = getInMemoryUsers();
+    
+    // Check if user exists (in memory or would exist in DB)
+    if (users.some(u => u.email === email)) {
+      return res.status(400).json({ msg: 'User already exists' });
+    }
+
+    if (users.some(u => u.username === username)) {
+      return res.status(400).json({ msg: 'Username already taken' });
+    }
+
+    // Create new user (in memory for demo)
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    const newUser = {
+      id: `user-${Date.now()}`,
+      firstName,
+      lastName,
       username,
       email,
-      password,
-      profile: {
-        firstName,
-        lastName
+      password: hashedPassword,
+      profilePicture: {
+        url: '/default-avatar.png',
+        publicId: ''
+      },
+      role: 'user',
+      isActive: true,
+      isVerified: false,
+      createdAt: new Date(),
+      friends: [],
+      pendingFriendRequests: [],
+      sentFriendRequests: []
+    };
+
+    // Add to in-memory storage
+    addUserToMemory(newUser);
+
+    // Create JWT token
+    const payload = {
+      user: {
+        id: newUser.id,
+        role: newUser.role
       }
-    });
+    };
 
-    // Save user
-    await user.save();
+    jwt.sign(
+      payload,
+      process.env.JWT_SECRET || 'your-secret-key',
+      { expiresIn: '7d' },
+      (err, token) => {
+        if (err) throw err;
+        res.json({ 
+          token,
+          user: {
+            id: newUser.id,
+            firstName: newUser.firstName,
+            lastName: newUser.lastName,
+            username: newUser.username,
+            email: newUser.email,
+            role: newUser.role,
+            profilePicture: newUser.profilePicture
+          }
+        });
+      }
+    );
 
-    // Generate token
-    const token = generateToken(user._id);
-
-    // Remove password from response
-    const userResponse = user.toObject();
-    delete userResponse.password;
-
-    res.status(201).json({
-      success: true,
-      token,
-      user: userResponse
-    });
-  } catch (error) {
-    console.error('Registration error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Server error', 
-      error: error.message 
-    });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server error');
   }
 });
 
@@ -85,7 +140,6 @@ router.post('/login', [
   check('email', 'Please include a valid email').isEmail(),
   check('password', 'Password is required').exists()
 ], async (req, res) => {
-  // Validate input
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
@@ -94,48 +148,68 @@ router.post('/login', [
   const { email, password } = req.body;
 
   try {
-    // Check for user
-    const user = await User.findOne({ email }).select('+password');
+    let user = null;
     
-    if (!user) {
-      return res.status(401).json({ 
-        success: false, 
-        message: 'Invalid credentials' 
-      });
+    // Check if admin login
+    if (email === HARDCODED_ADMIN.email) {
+      // Verify admin password
+      const isMatch = await bcrypt.compare(password, HARDCODED_ADMIN.password);
+      
+      if (!isMatch) {
+        return res.status(400).json({ msg: 'Invalid credentials' });
+      }
+      
+      user = HARDCODED_ADMIN;
+    } else {
+      // Check in-memory users
+      const users = getInMemoryUsers();
+      user = users.find(u => u.email === email);
+      
+      if (!user) {
+        return res.status(400).json({ msg: 'Invalid credentials' });
+      }
+      
+      // Check password
+      const isMatch = await bcrypt.compare(password, user.password);
+      
+      if (!isMatch) {
+        return res.status(400).json({ msg: 'Invalid credentials' });
+      }
     }
 
-    // Check password
-    const isMatch = await user.comparePassword(password);
-    
-    if (!isMatch) {
-      return res.status(401).json({ 
-        success: false, 
-        message: 'Invalid credentials' 
-      });
-    }
+    // Create JWT payload
+    const payload = {
+      user: {
+        id: user.id,
+        role: user.role || 'user'
+      }
+    };
 
-    // Update last active
-    user.lastActive = new Date();
-    await user.save();
+    // Sign token
+    jwt.sign(
+      payload,
+      process.env.JWT_SECRET || 'your-secret-key',
+      { expiresIn: '7d' },
+      (err, token) => {
+        if (err) throw err;
+        res.json({ 
+          token,
+          user: {
+            id: user.id,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            username: user.username,
+            email: user.email,
+            role: user.role || 'user',
+            profilePicture: user.profilePicture
+          }
+        });
+      }
+    );
 
-    // Generate token
-    const token = generateToken(user._id);
-
-    // Remove password from response
-    const userResponse = user.toObject();
-    delete userResponse.password;
-
-    res.json({
-      success: true,
-      token,
-      user: userResponse
-    });
-  } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Server error' 
-    });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server error');
   }
 });
 
@@ -144,187 +218,96 @@ router.post('/login', [
 // @access  Private
 router.get('/me', protect, async (req, res) => {
   try {
-    const user = await User.findById(req.user.id)
-      .select('-password')
-      .populate('friends.user', 'username profilePicture')
-      .populate('followers', 'username profilePicture')
-      .populate('following', 'username profilePicture');
-
-    if (!user) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'User not found' 
-      });
-    }
-
-    res.json({
-      success: true,
-      user
-    });
-  } catch (error) {
-    console.error('Get user error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Server error' 
-    });
-  }
-});
-
-// @route   POST /api/auth/logout
-// @desc    Logout user
-// @access  Private
-router.post('/logout', protect, async (req, res) => {
-  try {
-    // Update last active
-    await User.findByIdAndUpdate(req.user.id, { 
-      lastActive: new Date() 
-    });
-
-    res.json({ 
-      success: true, 
-      message: 'Logged out successfully' 
-    });
-  } catch (error) {
-    console.error('Logout error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Server error' 
-    });
-  }
-});
-
-// @route   POST /api/auth/forgot-password
-// @desc    Forgot password
-// @access  Public
-router.post('/forgot-password', [
-  check('email', 'Please include a valid email').isEmail()
-], async (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
-  }
-
-  const { email } = req.body;
-
-  try {
-    const user = await User.findOne({ email });
+    let user = null;
     
-    if (!user) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'User not found' 
-      });
+    // Check if admin
+    if (req.user.id === HARDCODED_ADMIN.id) {
+      user = HARDCODED_ADMIN;
+    } else {
+      // Check in-memory users
+      const users = getInMemoryUsers();
+      user = users.find(u => u.id === req.user.id);
+      
+      if (!user) {
+        return res.status(404).json({ msg: 'User not found' });
+      }
     }
-
-    // Generate reset token
-    const resetToken = jwt.sign(
-      { id: user._id }, 
-      process.env.JWT_SECRET + user.password, 
-      { expiresIn: '15m' }
-    );
-
-    // In production, send email here
-    // await sendResetEmail(user.email, resetToken);
-
-    res.json({
-      success: true,
-      message: 'Password reset email sent',
-      resetToken // In production, don't send token in response
-    });
-  } catch (error) {
-    console.error('Forgot password error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Server error' 
-    });
-  }
-});
-
-// @route   POST /api/auth/reset-password/:token
-// @desc    Reset password
-// @access  Public
-router.post('/reset-password/:token', [
-  check('password', 'Password must be at least 6 characters').isLength({ min: 6 })
-], async (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
-  }
-
-  const { token } = req.params;
-  const { password } = req.body;
-
-  try {
-    // Verify token and get user
-    const user = await User.findOne({ 
-      resetPasswordToken: token,
-      resetPasswordExpires: { $gt: Date.now() }
-    });
-
-    if (!user) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Invalid or expired token' 
-      });
-    }
-
-    // Update password
-    user.password = password;
-    user.resetPasswordToken = undefined;
-    user.resetPasswordExpires = undefined;
     
-    await user.save();
-
-    res.json({
-      success: true,
-      message: 'Password reset successful'
-    });
-  } catch (error) {
-    console.error('Reset password error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Server error' 
-    });
-  }
-});
-
-// @route   POST /api/auth/refresh-token
-// @desc    Refresh access token
-// @access  Private
-router.post('/refresh-token', async (req, res) => {
-  const { refreshToken } = req.body;
-
-  if (!refreshToken) {
-    return res.status(401).json({ 
-      success: false, 
-      message: 'Refresh token required' 
-    });
-  }
-
-  try {
-    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
-    const user = await User.findById(decoded.id);
+    // Return user without password
+    const userWithoutPassword = { ...user };
+    delete userWithoutPassword.password;
     
-    if (!user) {
-      return res.status(401).json({ 
-        success: false, 
-        message: 'Invalid refresh token' 
-      });
-    }
-
-    const newAccessToken = generateToken(user._id);
-
-    res.json({
-      success: true,
-      accessToken: newAccessToken
-    });
-  } catch (error) {
-    console.error('Refresh token error:', error);
-    res.status(401).json({ 
-      success: false, 
-      message: 'Invalid refresh token' 
-    });
+    res.json(userWithoutPassword);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server Error');
   }
 });
+
+// In-memory user storage (temporary)
+let inMemoryUsers = [];
+
+const getInMemoryUsers = () => {
+  return [...inMemoryUsers];
+};
+
+const addUserToMemory = (user) => {
+  inMemoryUsers.push(user);
+};
+
+// Initialize with some demo users if needed
+const initializeDemoUsers = () => {
+  if (inMemoryUsers.length === 0) {
+    // Add admin to memory for consistency
+    inMemoryUsers.push(HARDCODED_ADMIN);
+    
+    // Add some demo users
+    const demoUsers = [
+      {
+        id: 'user-001',
+        firstName: 'John',
+        lastName: 'Doe',
+        username: 'johndoe',
+        email: 'john@example.com',
+        password: bcrypt.hashSync('password123', 10),
+        profilePicture: {
+          url: '/default-avatar.png',
+          publicId: ''
+        },
+        role: 'user',
+        isActive: true,
+        isVerified: true,
+        createdAt: new Date('2024-01-01'),
+        friends: [],
+        pendingFriendRequests: [],
+        sentFriendRequests: []
+      },
+      {
+        id: 'user-002',
+        firstName: 'Jane',
+        lastName: 'Smith',
+        username: 'janesmith',
+        email: 'jane@example.com',
+        password: bcrypt.hashSync('password123', 10),
+        profilePicture: {
+          url: '/default-avatar.png',
+          publicId: ''
+        },
+        role: 'user',
+        isActive: true,
+        isVerified: true,
+        createdAt: new Date('2024-01-02'),
+        friends: [],
+        pendingFriendRequests: [],
+        sentFriendRequests: []
+      }
+    ];
+    
+    demoUsers.forEach(user => inMemoryUsers.push(user));
+  }
+};
+
+// Initialize on server start
+initializeDemoUsers();
 
 module.exports = router;
