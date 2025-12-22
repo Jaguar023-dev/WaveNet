@@ -7,11 +7,12 @@ import {
   Home, 
   Users, 
   Video, 
-  Store, 
+  ShoppingBag,  // Changed from Store
   Bell, 
   MessageCircle,
   Menu,
-  X
+  X,
+  Users as GroupsIcon  // Reusing Users icon for Groups, or use a different one
 } from 'react-feather';
 
 const Header = () => {
@@ -28,9 +29,9 @@ const Header = () => {
   const navItems = [
     { icon: <Home size={24} />, path: '/', label: 'Home' },
     { icon: <Users size={24} />, path: '/friends', label: 'Friends' },
-    { icon: <Users size={24} />, path: '/groups', label: 'Groups' },
+    { icon: <GroupsIcon size={24} />, path: '/groups', label: 'Groups' },
     { icon: <Video size={24} />, path: '/watch', label: 'Watch' },
-    { icon: <Store size={24} />, path: '/marketplace', label: 'Marketplace' },
+    { icon: <ShoppingBag size={24} />, path: '/marketplace', label: 'Marketplace' }, // Changed from Store
   ];
 
   return (
