@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Play, TrendingUp, Clock, Film, Music, Gamepad, TrendingUp as TrendingIcon } from 'react-feather';
+import { Play, TrendingUp, Clock, Film, Music, Command as Gamepad, TrendingUp as TrendingIcon } from 'react-feather';
 import './Watch.css';
 
 const Watch = () => {
