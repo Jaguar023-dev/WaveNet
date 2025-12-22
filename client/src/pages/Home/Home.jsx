@@ -3,7 +3,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { 
   Home as HomeIcon, 
   Users, 
-  Video as LiveVideoIcon,  
+  
   ShoppingBag, 
   Bell, 
   MessageCircle,
