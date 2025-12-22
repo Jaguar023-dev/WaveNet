@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:latest
+    container_name: wavenet-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+    networks:
+      - wavenet-network
+
+  redis:
+    image: redis:alpine
+    container_name: wavenet-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - wavenet-network
+
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: wavenet-server
+    ports:
+      - "5000:5000"
+    environment:
+      - NODE_ENV=production
+      - MONGODB_URI=mongodb://admin:password@mongodb:27017/wavenet
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - mongodb
+      - redis
+    networks:
+      - wavenet-network
+
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: wavenet-client
+    ports:
+      - "3000:80"
+    depends_on:
+      - server
+    networks:
+      - wavenet-network
+
+volumes:
+  mongodb_data:
+  redis_data:
+
+networks:
+  wavenet-network:
+    driver: bridge
