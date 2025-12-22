@@ -7,6 +7,8 @@ const dotenv = require('dotenv');
 const socketio = require('socket.io');
 const http = require('http');
 const rateLimit = require('express-rate-limit');
+const path = require('path');
+const fs = require('fs');
 
 // Load environment variables
 dotenv.config();
@@ -22,9 +24,16 @@ const notificationRoutes = require('./routes/notifications');
 // Initialize Express app
 const app = express();
 const server = http.createServer(app);
+
+// Determine client URL based on environment
+const isProduction = process.env.NODE_ENV === 'production';
+const CLIENT_URL = isProduction 
+  ? `http://localhost:${process.env.PORT || 5000}`
+  : process.env.CLIENT_URL || 'http://localhost:3000';
+
 const io = socketio(server, {
   cors: {
-    origin: process.env.CLIENT_URL || 'http://localhost:3000',
+    origin: CLIENT_URL,
     credentials: true
   }
 });
@@ -36,10 +45,12 @@ const limiter = rateLimit({
 });
 
 // Middleware
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: false,
+}));
 app.use(compression());
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:3000',
+  origin: CLIENT_URL,
   credentials: true
 }));
 app.use(express.json({ limit: '10mb' }));
@@ -88,9 +99,70 @@ app.get('/health', (req, res) => {
   res.status(200).json({ 
     status: 'OK', 
     timestamp: new Date().toISOString(),
-    uptime: process.uptime()
+    uptime: process.uptime(),
+    mode: isProduction ? 'production' : 'development',
+    client: CLIENT_URL
   });
 });
+
+// Serve React app in production
+if (isProduction) {
+  const clientBuildPath = path.join(__dirname, '../client/dist');
+  const clientIndexPath = path.join(clientBuildPath, 'index.html');
+  
+  // Check if React build exists
+  if (fs.existsSync(clientBuildPath) && fs.existsSync(clientIndexPath)) {
+    console.log('✅ Serving React build from:', clientBuildPath);
+    
+    // Serve static files
+    app.use(express.static(clientBuildPath));
+    
+    // Handle React routing
+    app.get('*', (req, res, next) => {
+      // Skip API and Socket.io routes
+      if (req.path.startsWith('/api') || req.path.startsWith('/socket.io')) {
+        return next();
+      }
+      
+      // Serve index.html for all other routes
+      res.sendFile(clientIndexPath);
+    });
+  } else {
+    console.warn('⚠️  React build not found at:', clientBuildPath);
+    console.log('Running in API-only mode');
+    
+    app.get('/', (req, res) => {
+      res.json({
+        message: 'WaveNet API Server',
+        status: 'Running in API-only mode',
+        build: 'React build not found',
+        instructions: 'Build React app with: npm run build (in client directory)',
+        endpoints: {
+          api: '/api',
+          health: '/health',
+          socket: '/socket.io'
+        }
+      });
+    });
+  }
+} else {
+  // Development mode - API only
+  app.get('/', (req, res) => {
+    res.json({
+      message: 'WaveNet Development API Server',
+      mode: 'development',
+      client: 'React app should be running on ' + CLIENT_URL,
+      api: {
+        base: '/api',
+        auth: '/api/auth',
+        users: '/api/users',
+        posts: '/api/posts',
+        messages: '/api/messages',
+        socket: 'ws://localhost:' + (process.env.PORT || 5000)
+      }
+    });
+  });
+}
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -101,12 +173,31 @@ app.use((err, req, res, next) => {
   });
 });
 
-// 404 handler
-app.use('*', (req, res) => {
-  res.status(404).json({ message: 'Route not found' });
+// 404 handler for API routes
+app.use('/api/*', (req, res) => {
+  res.status(404).json({ 
+    message: 'API route not found',
+    path: req.path,
+    available: {
+      auth: ['/api/auth/login', '/api/auth/register', '/api/auth/me'],
+      users: '/api/users',
+      posts: '/api/posts',
+      messages: '/api/messages'
+    }
+  });
 });
 
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
-  console.log(`WaveNet server running on port ${PORT}`);
+  console.log(`🚀 WaveNet server started on port ${PORT}`);
+  console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🔗 Health endpoint: http://localhost:${PORT}/health`);
+  console.log(`⚡ Socket.io: ws://localhost:${PORT}`);
+  
+  if (isProduction) {
+    console.log(`🎨 Frontend: http://localhost:${PORT}`);
+  } else {
+    console.log(`💻 React dev server: ${CLIENT_URL}`);
+    console.log(`📡 API: http://localhost:${PORT}/api`);
+  }
 });
