@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import { User, Camera, Edit, MapPin, Briefcase, GraduationCap, Link as LinkIcon, MoreVertical } from 'react-feather';
+import { User, Camera, Edit, MapPin, Briefcase, Award as GraduationCap, Link as LinkIcon, MoreVertical } from 'react-feather';
 import './Profile.css';
 
 const Profile = () => {
