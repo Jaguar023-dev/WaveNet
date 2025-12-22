@@ -2,14 +2,15 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
-const auth = require('../middleware/auth');
+const { protect } = require('../middleware/auth');  // Changed: destructure protect
 const upload = require('../middleware/upload');
 const { validateUserUpdate } = require('../utils/validators');
+const mongoose = require('mongoose');  // Added: needed for stats route
 
 // @route   GET /api/users/me
 // @desc    Get current user's profile
 // @access  Private
-router.get('/me', auth, async (req, res) => {
+router.get('/me', protect, async (req, res) => {  // Changed: auth → protect
   try {
     const user = await User.findById(req.user.id)
       .select('-password')
@@ -31,7 +32,7 @@ router.get('/me', auth, async (req, res) => {
 // @route   GET /api/users/:id
 // @desc    Get user by ID
 // @access  Private
-router.get('/:id', auth, async (req, res) => {
+router.get('/:id', protect, async (req, res) => {  // Changed: auth → protect
   try {
     const user = await User.findById(req.params.id)
       .select('-password -email -phone')
@@ -63,7 +64,7 @@ router.get('/:id', auth, async (req, res) => {
 // @route   PUT /api/users/:id
 // @desc    Update user profile
 // @access  Private
-router.put('/:id', [auth, upload.single('profilePicture')], async (req, res) => {
+router.put('/:id', [protect, upload.single('profilePicture')], async (req, res) => {  // Changed: auth → protect
   const { errors, isValid } = validateUserUpdate(req.body);
   
   if (!isValid) {
@@ -113,7 +114,7 @@ router.put('/:id', [auth, upload.single('profilePicture')], async (req, res) => 
 // @route   GET /api/users/search
 // @desc    Search users
 // @access  Private
-router.get('/', auth, async (req, res) => {
+router.get('/', protect, async (req, res) => {  // Changed: auth → protect
   try {
     const { q, page = 1, limit = 20 } = req.query;
     const searchQuery = q ? {
@@ -148,7 +149,7 @@ router.get('/', auth, async (req, res) => {
 // @route   POST /api/users/:id/friend-request
 // @desc    Send friend request
 // @access  Private
-router.post('/:id/friend-request', auth, async (req, res) => {
+router.post('/:id/friend-request', protect, async (req, res) => {  // Changed: auth → protect
   try {
     // Check if user is trying to add themselves
     if (req.params.id === req.user.id) {
@@ -201,7 +202,7 @@ router.post('/:id/friend-request', auth, async (req, res) => {
 // @route   PUT /api/users/friend-request/:requestId
 // @desc    Accept/Reject friend request
 // @access  Private
-router.put('/friend-request/:requestId', auth, async (req, res) => {
+router.put('/friend-request/:requestId', protect, async (req, res) => {  // Changed: auth → protect
   try {
     const { action } = req.body; // 'accept' or 'reject'
     
@@ -257,7 +258,7 @@ router.put('/friend-request/:requestId', auth, async (req, res) => {
 // @route   DELETE /api/users/friend/:friendId
 // @desc    Remove friend
 // @access  Private
-router.delete('/friend/:friendId', auth, async (req, res) => {
+router.delete('/friend/:friendId', protect, async (req, res) => {  // Changed: auth → protect
   try {
     const [user, friend] = await Promise.all([
       User.findById(req.user.id),
@@ -292,7 +293,7 @@ router.delete('/friend/:friendId', auth, async (req, res) => {
 // @route   GET /api/users/:id/friends
 // @desc    Get user's friends
 // @access  Private
-router.get('/:id/friends', auth, async (req, res) => {
+router.get('/:id/friends', protect, async (req, res) => {  // Changed: auth → protect
   try {
     const user = await User.findById(req.params.id)
       .select('friends')
@@ -315,7 +316,7 @@ router.get('/:id/friends', auth, async (req, res) => {
 // @route   GET /api/users/:id/mutual-friends
 // @desc    Get mutual friends between current user and target user
 // @access  Private
-router.get('/:id/mutual-friends', auth, async (req, res) => {
+router.get('/:id/mutual-friends', protect, async (req, res) => {  // Changed: auth → protect
   try {
     const [currentUser, targetUser] = await Promise.all([
       User.findById(req.user.id).select('friends'),
@@ -348,7 +349,7 @@ router.get('/:id/mutual-friends', auth, async (req, res) => {
 // @route   PUT /api/users/online-status
 // @desc    Update user's online status
 // @access  Private
-router.put('/online-status', auth, async (req, res) => {
+router.put('/online-status', protect, async (req, res) => {  // Changed: auth → protect
   try {
     const { isOnline, lastSeen } = req.body;
     
@@ -378,7 +379,7 @@ router.put('/online-status', auth, async (req, res) => {
 // @route   GET /api/users/suggestions
 // @desc    Get friend suggestions (users you may know)
 // @access  Private
-router.get('/suggestions', auth, async (req, res) => {
+router.get('/suggestions', protect, async (req, res) => {  // Changed: auth → protect
   try {
     const user = await User.findById(req.user.id).select('friends');
     
@@ -423,10 +424,10 @@ router.get('/suggestions', auth, async (req, res) => {
 // @route   GET /api/users/stats/:id
 // @desc    Get user statistics
 // @access  Private
-router.get('/stats/:id', auth, async (req, res) => {
+router.get('/stats/:id', protect, async (req, res) => {  // Changed: auth → protect
   try {
     const stats = await User.aggregate([
-      { $match: { _id: mongoose.Types.ObjectId(req.params.id) } },
+      { $match: { _id: new mongoose.Types.ObjectId(req.params.id) } },  // Fixed: new keyword
       {
         $lookup: {
           from: 'posts',
