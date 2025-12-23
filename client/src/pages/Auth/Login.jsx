@@ -1,3 +1,4 @@
+// client/src/pages/Auth/Login.jsx
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
@@ -18,12 +19,31 @@ const Login = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
-  const { loading, error, isAuthenticated } = useSelector(state => state.auth);
+  
+  // Get auth state from Redux
+  const { loading, error, isAuthenticated, user, token } = useSelector(state => state.auth);
 
   const from = location.state?.from?.pathname || '/';
 
+  // Debug logging
   useEffect(() => {
-    if (isAuthenticated) {
+    console.log('🔑 Login Component Debug:', {
+      isAuthenticated,
+      user: user ? user.username : 'No user',
+      token: token ? `Yes (${token.substring(0, 20)}...)` : 'No',
+      loading,
+      error,
+      from,
+      currentPath: location.pathname
+    });
+  }, [isAuthenticated, user, token, loading, error, from, location]);
+
+  // Handle redirect after authentication
+  useEffect(() => {
+    console.log('🔄 Login useEffect - checking authentication state');
+    
+    if (isAuthenticated && user) {
+      console.log('✅ User authenticated, redirecting to:', from);
       navigate(from, { replace: true });
     }
     
@@ -39,7 +59,11 @@ const Login = () => {
         rememberMe: true
       }));
     }
-  }, [isAuthenticated, navigate, from, dispatch]);
+    
+    // Check if token exists in localStorage (for debugging)
+    const storedToken = localStorage.getItem('token');
+    console.log('🔍 Token in localStorage:', storedToken ? `Yes (${storedToken.substring(0, 20)}...)` : 'No');
+  }, [isAuthenticated, user, navigate, from, dispatch]);
 
   const validateForm = () => {
     const newErrors = {};
@@ -78,47 +102,91 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    console.log('📝 Login form submitted:', { 
+      email: formData.email, 
+      passwordLength: formData.password.length 
+    });
+    
     const validationErrors = validateForm();
     if (Object.keys(validationErrors).length > 0) {
+      console.log('❌ Form validation errors:', validationErrors);
       setErrors(validationErrors);
       return;
     }
     
     setIsSubmitting(true);
+    console.log('🔄 Starting login process...');
     
     // Save email if remember me is checked
     if (formData.rememberMe) {
       localStorage.setItem('rememberedEmail', formData.email);
+      console.log('💾 Email saved to localStorage for remember me');
     } else {
       localStorage.removeItem('rememberedEmail');
     }
     
     try {
-      await dispatch(login({
+      console.log('📡 Dispatching login action...');
+      const result = await dispatch(login({
         email: formData.email,
         password: formData.password
       })).unwrap();
       
-      // Redirect handled by useEffect
+      console.log('✅ Login successful! Result:', {
+        user: result.user?.username,
+        accessToken: result.accessToken ? 'Yes' : 'No',
+        refreshToken: result.refreshToken ? 'Yes' : 'No'
+      });
+      
+      // The redirect will happen automatically via useEffect
+      // when isAuthenticated becomes true
+      
     } catch (error) {
-      console.error('Login failed:', error);
+      console.error('❌ Login failed:', error);
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleSocialLogin = (provider) => {
+    console.log('🌐 Social login clicked:', provider);
     // Redirect to OAuth endpoint
-    window.location.href = `${process.env.REACT_APP_API_URL}/auth/${provider}`;
+    window.location.href = `${process.env.REACT_APP_API_URL || ''}/auth/${provider}`;
   };
 
   const handleForgotPassword = () => {
+    console.log('🔐 Forgot password clicked');
     navigate('/forgot-password');
+  };
+
+  const handleTestLogin = () => {
+    console.log('🧪 Test login clicked');
+    setFormData({
+      email: 'test@example.com',
+      password: 'password123',
+      rememberMe: false
+    });
   };
 
   return (
     <div className="auth-container">
       <div className="auth-card">
+        {/* Debug info - remove in production */}
+        <div style={{
+          background: '#f0f2f5',
+          padding: '10px',
+          borderRadius: '5px',
+          marginBottom: '15px',
+          fontSize: '12px',
+          borderLeft: '4px solid #1877f2'
+        }}>
+          <strong>Debug Info:</strong>
+          <div>Auth State: {isAuthenticated ? '✅ Authenticated' : '❌ Not authenticated'}</div>
+          <div>User: {user ? user.username : 'None'}</div>
+          <div>Loading: {loading ? 'Yes' : 'No'}</div>
+          <div>Error: {error || 'None'}</div>
+        </div>
+
         {/* Logo */}
         <div className="auth-header">
           <Link to="/" className="auth-logo">
@@ -200,6 +268,7 @@ const Login = () => {
                 placeholder="Enter your email"
                 disabled={isSubmitting}
                 autoComplete="email"
+                autoFocus
               />
             </div>
             {errors.email && (
@@ -274,6 +343,16 @@ const Login = () => {
               'Log In'
             )}
           </button>
+          
+          {/* Debug button - remove in production */}
+          <button
+            type="button"
+            onClick={handleTestLogin}
+            className="auth-btn secondary"
+            style={{ marginTop: '10px', fontSize: '12px', padding: '8px' }}
+          >
+            🧪 Fill Test Credentials
+          </button>
         </form>
 
         {/* Divider */}
@@ -309,6 +388,43 @@ const Login = () => {
             <img src="https://static.xx.fbcdn.net/rsrc.php/v3/yu/r/eX92ujx-8Wn.png" alt="Google Play" />
           </a>
         </div>
+      </div>
+      
+      {/* Debug panel - remove in production */}
+      <div style={{
+        position: 'fixed',
+        bottom: '10px',
+        right: '10px',
+        background: '#2d3436',
+        color: 'white',
+        padding: '10px',
+        borderRadius: '5px',
+        fontSize: '11px',
+        maxWidth: '300px',
+        zIndex: 1000
+      }}>
+        <strong>Auth Debug:</strong>
+        <div>Status: {isAuthenticated ? '✅ Logged In' : '❌ Not Logged In'}</div>
+        <div>User: {user ? user.username : 'None'}</div>
+        <div>Token: {token ? 'Present' : 'Missing'}</div>
+        <div>Loading: {loading ? 'Yes' : 'No'}</div>
+        <button 
+          onClick={() => {
+            localStorage.clear();
+            window.location.reload();
+          }}
+          style={{
+            background: '#e74c3c',
+            color: 'white',
+            border: 'none',
+            padding: '5px',
+            marginTop: '5px',
+            borderRadius: '3px',
+            cursor: 'pointer'
+          }}
+        >
+          Clear Storage & Reload
+        </button>
       </div>
     </div>
   );
