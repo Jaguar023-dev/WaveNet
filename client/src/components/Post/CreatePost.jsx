@@ -1,14 +1,10 @@
+// client/src/components/Post/CreatePost.jsx
 import React, { useState, useRef } from 'react';
 import { useSelector } from 'react-redux';
-import { Image, Video, Smile, MapPin, Feeling } from '../../utils/icons';
-import EmojiPicker from 'emoji-picker-react';
-import PostPrivacySelect from './PostPrivacySelect';
 
-const CreatePost = ({ onPostCreated }) => {
+const CreatePost = ({ onPostCreated, onClose }) => {
   const [content, setContent] = useState('');
   const [media, setMedia] = useState([]);
-  const [privacy, setPrivacy] = useState('friends');
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [isPosting, setIsPosting] = useState(false);
   const fileInputRef = useRef(null);
   const { user } = useSelector(state => state.auth);
@@ -18,13 +14,10 @@ const CreatePost = ({ onPostCreated }) => {
     const newMedia = files.map(file => ({
       file,
       preview: URL.createObjectURL(file),
-      type: file.type.startsWith('image/') ? 'image' : 'video'
+      type: file.type.startsWith('image/') ? 'image' : 'video',
+      name: file.name
     }));
     setMedia([...media, ...newMedia]);
-  };
-
-  const handleEmojiClick = (emojiData) => {
-    setContent(prev => prev + emojiData.emoji);
   };
 
   const handleSubmit = async (e) => {
@@ -36,127 +29,157 @@ const CreatePost = ({ onPostCreated }) => {
     try {
       const formData = new FormData();
       formData.append('content', content);
-      formData.append('privacy', privacy);
+      formData.append('privacy', 'friends'); // Default privacy
       
       media.forEach((item, index) => {
         formData.append(`media`, item.file);
       });
 
       // TODO: API call to create post
-      // const response = await api.post('/posts', formData);
+      console.log('Creating post with:', { content, mediaCount: media.length });
+      
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
       // Reset form
       setContent('');
       setMedia([]);
-      setPrivacy('friends');
       
       // Notify parent component
       if (onPostCreated) {
         onPostCreated();
       }
+      
+      // Close modal
+      if (onClose) {
+        onClose();
+      }
+      
+      alert('Post created successfully!');
+      
     } catch (error) {
       console.error('Error creating post:', error);
+      alert('Failed to create post. Please try again.');
     } finally {
       setIsPosting(false);
     }
   };
 
   const removeMedia = (index) => {
+    // Revoke object URL to prevent memory leaks
+    URL.revokeObjectURL(media[index].preview);
     setMedia(media.filter((_, i) => i !== index));
   };
 
+  const handlePhotoClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleClose = () => {
+    // Clean up object URLs
+    media.forEach(item => URL.revokeObjectURL(item.preview));
+    if (onClose) {
+      onClose();
+    }
+  };
+
   return (
-    <div className="bg-white rounded-lg shadow-md p-4 mb-6">
-      <div className="flex items-center space-x-3 mb-4">
+    <div className="create-post-modal">
+      {/* Header */}
+      <div className="create-post-header">
+        <h3>Create Post</h3>
+        <button 
+          className="close-btn"
+          onClick={handleClose}
+          type="button"
+        >
+          <i className="fi fi-rr-cross-small"></i>
+        </button>
+      </div>
+
+      {/* User Info */}
+      <div className="create-post-user">
         <img
-          src={user?.profilePicture || '/default-avatar.png'}
+          src={user?.profile?.profilePicture?.url || '/default-avatar.png'}
           alt={user?.username}
-          className="w-10 h-10 rounded-full object-cover"
+          className="user-avatar"
         />
-        <div className="flex-1">
-          <h3 className="font-semibold">{user?.username}</h3>
-          <PostPrivacySelect value={privacy} onChange={setPrivacy} />
+        <div className="user-info">
+          <h4>{user?.username}</h4>
+          <select className="privacy-select">
+            <option value="public">🌐 Public</option>
+            <option value="friends">👥 Friends</option>
+            <option value="onlyme">🔒 Only me</option>
+          </select>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit}>
+      {/* Content Area */}
+      <form onSubmit={handleSubmit} className="create-post-form">
+        {/* Caption Input */}
         <textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
           placeholder={`What's on your mind, ${user?.username}?`}
-          className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none mb-3"
-          rows="3"
+          className="caption-input"
+          rows="4"
+          autoFocus
         />
 
         {/* Media Preview */}
         {media.length > 0 && (
-          <div className="mb-4 grid grid-cols-2 gap-2">
+          <div className="media-preview">
             {media.map((item, index) => (
-              <div key={index} className="relative group">
+              <div key={index} className="media-item">
                 {item.type === 'image' ? (
-                  <img
-                    src={item.preview}
-                    alt="Preview"
-                    className="w-full h-48 object-cover rounded-lg"
-                  />
+                  <div className="image-preview">
+                    <img
+                      src={item.preview}
+                      alt="Preview"
+                      className="preview-image"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeMedia(index)}
+                      className="remove-media-btn"
+                    >
+                      <i className="fi fi-rr-cross-small"></i>
+                    </button>
+                    <div className="media-name">{item.name}</div>
+                  </div>
                 ) : (
-                  <video
-                    src={item.preview}
-                    className="w-full h-48 object-cover rounded-lg"
-                    controls
-                  />
+                  <div className="video-preview">
+                    <video
+                      src={item.preview}
+                      className="preview-video"
+                      controls
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeMedia(index)}
+                      className="remove-media-btn"
+                    >
+                      <i className="fi fi-rr-cross-small"></i>
+                    </button>
+                    <div className="media-name">{item.name}</div>
+                  </div>
                 )}
-                <button
-                  type="button"
-                  onClick={() => removeMedia(index)}
-                  className="absolute top-2 right-2 bg-black bg-opacity-50 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  ✕
-                </button>
               </div>
             ))}
           </div>
         )}
 
-        {/* Post Actions */}
-        <div className="border-t pt-4">
-          <div className="flex items-center justify-between">
-            <div className="flex space-x-2">
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="flex items-center space-x-2 text-gray-600 hover:text-blue-600 p-2 rounded-lg hover:bg-gray-100"
-              >
-                <Image className="w-5 h-5" />
-                <span>Photo/Video</span>
-              </button>
-              
-              <button
-                type="button"
-                onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                className="flex items-center space-x-2 text-gray-600 hover:text-yellow-600 p-2 rounded-lg hover:bg-gray-100"
-              >
-                <Smile className="w-5 h-5" />
-                <span>Feeling</span>
-              </button>
-              
-              <button
-                type="button"
-                className="flex items-center space-x-2 text-gray-600 hover:text-green-600 p-2 rounded-lg hover:bg-gray-100"
-              >
-                <MapPin className="w-5 h-5" />
-                <span>Location</span>
-              </button>
-            </div>
-            
-            <button
-              type="submit"
-              disabled={isPosting || (!content.trim() && media.length === 0)}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isPosting ? 'Posting...' : 'Post'}
-            </button>
-          </div>
+        {/* Photo Upload Button */}
+        <div className="photo-upload-section">
+          <button
+            type="button"
+            onClick={handlePhotoClick}
+            className="photo-upload-btn"
+          >
+            <i className="fi fi-sr-add-image"></i>
+            <span>Add Photos/Videos</span>
+          </button>
+          <p className="upload-hint">Select photos or videos from your gallery</p>
         </div>
 
         {/* Hidden file input */}
@@ -166,15 +189,37 @@ const CreatePost = ({ onPostCreated }) => {
           multiple
           accept="image/*,video/*"
           onChange={handleMediaUpload}
-          className="hidden"
+          className="hidden-file-input"
         />
 
-        {/* Emoji Picker */}
-        {showEmojiPicker && (
-          <div className="absolute z-10 mt-2">
-            <EmojiPicker onEmojiClick={handleEmojiClick} />
-          </div>
-        )}
+        {/* Action Buttons */}
+        <div className="action-buttons">
+          <button
+            type="button"
+            onClick={handlePhotoClick}
+            className="icon-btn photo-btn"
+            title="Add photo"
+          >
+            <i className="fi fi-sr-add-image"></i>
+          </button>
+          
+          <div className="spacer"></div>
+          
+          <button
+            type="submit"
+            disabled={isPosting || (!content.trim() && media.length === 0)}
+            className="post-btn"
+          >
+            {isPosting ? (
+              <>
+                <span className="spinner"></span>
+                Posting...
+              </>
+            ) : (
+              'Post'
+            )}
+          </button>
+        </div>
       </form>
     </div>
   );
