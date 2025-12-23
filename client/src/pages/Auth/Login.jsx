@@ -15,6 +15,7 @@ const Login = () => {
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [redirectAttempted, setRedirectAttempted] = useState(false);
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -23,7 +24,7 @@ const Login = () => {
   // Get auth state from Redux
   const { loading, error, isAuthenticated, user, token } = useSelector(state => state.auth);
 
-  const from = location.state?.from?.pathname || '/';
+  const from = location.state?.from?.pathname || '/home'; // Default to '/home'
 
   // Debug logging
   useEffect(() => {
@@ -34,17 +35,24 @@ const Login = () => {
       loading,
       error,
       from,
-      currentPath: location.pathname
+      currentPath: location.pathname,
+      redirectAttempted
     });
-  }, [isAuthenticated, user, token, loading, error, from, location]);
+  }, [isAuthenticated, user, token, loading, error, from, location, redirectAttempted]);
 
-  // Handle redirect after authentication
+  // Handle redirect after authentication - FIXED VERSION
   useEffect(() => {
     console.log('🔄 Login useEffect - checking authentication state');
     
-    if (isAuthenticated && user) {
+    // Check if we should redirect
+    if (isAuthenticated && user && !redirectAttempted) {
       console.log('✅ User authenticated, redirecting to:', from);
-      navigate(from, { replace: true });
+      setRedirectAttempted(true);
+      
+      // Use setTimeout to ensure React state updates are complete
+      setTimeout(() => {
+        navigate(from, { replace: true });
+      }, 100);
     }
     
     // Clear any previous errors
@@ -63,7 +71,7 @@ const Login = () => {
     // Check if token exists in localStorage (for debugging)
     const storedToken = localStorage.getItem('token');
     console.log('🔍 Token in localStorage:', storedToken ? `Yes (${storedToken.substring(0, 20)}...)` : 'No');
-  }, [isAuthenticated, user, navigate, from, dispatch]);
+  }, [isAuthenticated, user, navigate, from, dispatch, redirectAttempted]);
 
   const validateForm = () => {
     const newErrors = {};
@@ -115,6 +123,7 @@ const Login = () => {
     }
     
     setIsSubmitting(true);
+    setRedirectAttempted(false); // Reset redirect flag
     console.log('🔄 Starting login process...');
     
     // Save email if remember me is checked
@@ -138,11 +147,59 @@ const Login = () => {
         refreshToken: result.refreshToken ? 'Yes' : 'No'
       });
       
-      // The redirect will happen automatically via useEffect
-      // when isAuthenticated becomes true
+      // OPTIONAL: Redirect immediately here instead of waiting for useEffect
+      // This can be more reliable
+      if (result.user && result.accessToken) {
+        console.log('🚀 Immediate redirect to Home');
+        setTimeout(() => {
+          navigate('/home', { replace: true });
+        }, 50);
+      }
       
     } catch (error) {
       console.error('❌ Login failed:', error);
+      setRedirectAttempted(false); // Allow retry
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Alternative: Direct login with immediate Home call
+  const handleDirectLogin = async () => {
+    try {
+      setIsSubmitting(true);
+      
+      // Validate
+      const validationErrors = validateForm();
+      if (Object.keys(validationErrors).length > 0) {
+        setErrors(validationErrors);
+        return;
+      }
+      
+      // Dispatch login
+      const result = await dispatch(login({
+        email: formData.email,
+        password: formData.password
+      })).unwrap();
+      
+      // Store tokens if needed
+      if (result.accessToken) {
+        localStorage.setItem('token', result.accessToken);
+        if (result.refreshToken) {
+          localStorage.setItem('refreshToken', result.refreshToken);
+        }
+      }
+      
+      // Wait a moment for Redux state to update
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Force redirect to Home
+      console.log('🎯 Forcing redirect to /home');
+      window.location.href = '/home'; // Hard redirect
+      // OR: navigate('/home', { replace: true });
+      
+    } catch (error) {
+      console.error('Login error:', error);
     } finally {
       setIsSubmitting(false);
     }
@@ -150,7 +207,6 @@ const Login = () => {
 
   const handleSocialLogin = (provider) => {
     console.log('🌐 Social login clicked:', provider);
-    // Redirect to OAuth endpoint
     window.location.href = `${process.env.REACT_APP_API_URL || ''}/auth/${provider}`;
   };
 
@@ -171,7 +227,7 @@ const Login = () => {
   return (
     <div className="auth-container">
       <div className="auth-card">
-        {/* Debug info - remove in production */}
+        {/* Debug info */}
         <div style={{
           background: '#f0f2f5',
           padding: '10px',
@@ -184,7 +240,8 @@ const Login = () => {
           <div>Auth State: {isAuthenticated ? '✅ Authenticated' : '❌ Not authenticated'}</div>
           <div>User: {user ? user.username : 'None'}</div>
           <div>Loading: {loading ? 'Yes' : 'No'}</div>
-          <div>Error: {error || 'None'}</div>
+          <div>Redirect Attempted: {redirectAttempted ? 'Yes' : 'No'}</div>
+          <div>Target: {from}</div>
         </div>
 
         {/* Logo */}
@@ -344,7 +401,18 @@ const Login = () => {
             )}
           </button>
           
-          {/* Debug button - remove in production */}
+          {/* Alternative direct login button */}
+          <button
+            type="button"
+            onClick={handleDirectLogin}
+            className="auth-btn secondary"
+            style={{ marginTop: '10px' }}
+            disabled={isSubmitting || loading}
+          >
+            🚀 Login & Go Directly to Home
+          </button>
+          
+          {/* Debug button */}
           <button
             type="button"
             onClick={handleTestLogin}
@@ -390,7 +458,7 @@ const Login = () => {
         </div>
       </div>
       
-      {/* Debug panel - remove in production */}
+      {/* Debug panel */}
       <div style={{
         position: 'fixed',
         bottom: '10px',
@@ -408,6 +476,25 @@ const Login = () => {
         <div>User: {user ? user.username : 'None'}</div>
         <div>Token: {token ? 'Present' : 'Missing'}</div>
         <div>Loading: {loading ? 'Yes' : 'No'}</div>
+        <div>Redirect: {redirectAttempted ? 'Attempted' : 'Not attempted'}</div>
+        <button 
+          onClick={() => {
+            console.log('Manual redirect to /home');
+            navigate('/home');
+          }}
+          style={{
+            background: '#3498db',
+            color: 'white',
+            border: 'none',
+            padding: '5px',
+            marginTop: '5px',
+            marginRight: '5px',
+            borderRadius: '3px',
+            cursor: 'pointer'
+          }}
+        >
+          Manual Redirect
+        </button>
         <button 
           onClick={() => {
             localStorage.clear();
