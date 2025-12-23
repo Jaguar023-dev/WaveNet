@@ -6,8 +6,7 @@ const bcrypt = require('bcryptjs');
 const { check, validationResult } = require('express-validator');
 const User = require('../models/User');
 const { protect } = require('../middleware/auth');
-const { generateToken } = require('../utils/helpers');
-
+const generateToken = require('../utils/helpers').generateToken;
 // @route   POST /api/auth/register
 // @desc    Register user
 // @access  Public
