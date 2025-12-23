@@ -1,19 +1,10 @@
-// client/src/pages/Home/Home.jsx - SIMPLIFIED
+// client/src/pages/Home/Home.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { 
-  Video as LiveVideo,
-  Smile as Feeling,
-  Image as Photo,
-  Filter,
-  TrendingUp,
-  FileText as Newspaper,
-  Calendar
-} from 'react-feather';
+import { fetchFeed, clearPosts } from '../../store/slices/postSlice';
 import CreatePost from '../../components/Post/CreatePost';
 import Post from '../../components/Post/Post';
 import StoryCarousel from '../../components/Story/StoryCarousel';
-import { fetchFeed, clearPosts } from '../../store/slices/postSlice';
 import LoadingSpinner from '../../components/Common/LoadingSpinner';
 import './Home.css';
 
@@ -28,13 +19,26 @@ const Home = () => {
   const { user } = useSelector(state => state.auth);
   const feedRef = useRef(null);
 
-  console.log('🏠 Home component rendering');
-
   // Fetch initial feed
   useEffect(() => {
-    console.log('📡 Fetching feed...');
     dispatch(clearPosts());
     loadFeed(1);
+    
+    // Set up infinite scroll
+    const handleScroll = () => {
+      if (!feedRef.current || loadingMore || !hasMore) return;
+      
+      const { scrollTop, scrollHeight, clientHeight } = feedRef.current;
+      if (scrollHeight - scrollTop <= clientHeight * 1.5) {
+        loadMore();
+      }
+    };
+    
+    const feedElement = feedRef.current;
+    if (feedElement) {
+      feedElement.addEventListener('scroll', handleScroll);
+      return () => feedElement.removeEventListener('scroll', handleScroll);
+    }
   }, []);
 
   const loadFeed = async (pageNum) => {
@@ -50,71 +54,46 @@ const Home = () => {
     }
   };
 
+  const loadMore = () => {
+    if (!loadingMore && hasMore) {
+      loadFeed(page + 1);
+    }
+  };
+
   const handlePostCreated = () => {
     dispatch(clearPosts());
     loadFeed(1);
   };
 
-  const quickActions = [
-    { icon: <LiveVideo size={20} />, label: 'Live Video', color: 'text-red-500' },
-    { icon: <Photo size={20} />, label: 'Photo/Video', color: 'text-green-500' },
-    { icon: <Feeling size={20} />, label: 'Feeling/Activity', color: 'text-yellow-500' }
-  ];
-
   return (
     <div className="home-container">
-      {/* Stories */}
-      <div className="stories-section">
-        <StoryCarousel />
-      </div>
-      
-      {/* Create Post Card */}
-      <div className="create-post-card">
-        <div className="create-post-header">
+      {/* User Profile and Create Post */}
+      <div className="create-post-section">
+        <div className="user-profile-row">
           <img 
             src={user?.profile?.profilePicture?.url || '/default-avatar.png'} 
             alt={user?.username}
-            className="user-avatar-small"
+            className="profile-pic-small"
           />
           <button 
-            className="create-post-input"
+            className="whats-on-mind"
             onClick={() => setShowCreatePost(true)}
           >
             What's on your mind, {user?.username}?
           </button>
-        </div>
-        
-        <div className="quick-actions">
-          {quickActions.map((action, index) => (
-            <button key={index} className="quick-action-btn">
-              <span className={`action-icon ${action.color}`}>
-                {action.icon}
-              </span>
-              <span className="action-label">{action.label}</span>
-            </button>
-          ))}
+          <button className="photo-btn">
+            <i className="fi fi-sr-add-image"></i>
+          </button>
         </div>
       </div>
 
-      {/* Feed Filter */}
-      <div className="feed-filter">
-        <button className="filter-btn active">
-          <Newspaper size={18} />
-          <span>All Posts</span>
-        </button>
-        <button className="filter-btn">
-          <TrendingUp size={18} />
-          <span>Trending</span>
-        </button>
-        <button className="filter-btn">
-          <Calendar size={18} />
-          <span>Events</span>
-        </button>
-        <button className="filter-btn">
-          <Filter size={18} />
-          <span>Filters</span>
-        </button>
+      {/* Stories */}
+      <div className="stories-section">
+        <StoryCarousel user={user} />
       </div>
+
+      {/* Stories Separator */}
+      <div className="stories-separator"></div>
 
       {/* Posts Feed */}
       <div className="posts-feed" ref={feedRef}>
@@ -133,9 +112,7 @@ const Home = () => {
         ) : feed.length === 0 ? (
           <div className="empty-feed">
             <div className="empty-illustration">
-              <svg className="w-24 h-24 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
+              <i className="fi fi-ts-newspaper"></i>
             </div>
             <h3>No posts yet</h3>
             <p>Start following people or join groups to see posts in your feed.</p>
@@ -156,7 +133,7 @@ const Home = () => {
             {!hasMore && feed.length > 0 && (
               <div className="end-of-feed">
                 <p>You're all caught up! 🎉</p>
-                <p className="text-sm text-gray-500">Check back later for new posts</p>
+                <p className="text-sm">Check back later for new posts</p>
               </div>
             )}
           </>
@@ -173,20 +150,13 @@ const Home = () => {
                 className="close-modal"
                 onClick={() => setShowCreatePost(false)}
               >
-                ✕
+                <i className="fi fi-rr-cross-small"></i>
               </button>
             </div>
             <CreatePost onPostCreated={handlePostCreated} />
           </div>
         </div>
       )}
-
-      {/* Floating Action Button for Mobile */}
-      <button className="fab" onClick={() => setShowCreatePost(true)}>
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-        </svg>
-      </button>
     </div>
   );
 };
