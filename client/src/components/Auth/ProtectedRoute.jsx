@@ -1,86 +1,98 @@
 // client/src/components/Auth/ProtectedRoute.jsx
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { Navigate, useLocation, Outlet } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import { getCurrentUser } from '../../store/slices/authSlice';
+import { getCurrentUser, checkAuthStatus } from '../../store/slices/authSlice';
 import LoadingSpinner from '../Common/LoadingSpinner';
 
 const ProtectedRoute = () => {
   const dispatch = useDispatch();
   const location = useLocation();
-  const { isAuthenticated, loading, token, user } = useSelector(state => state.auth);
+  const { isAuthenticated, loading, token, user, isCheckingAuth } = useSelector(state => state.auth);
   
-  const [hasCheckedAuth, setHasCheckedAuth] = useState(false);
-
   // Debug logging
   useEffect(() => {
-    console.log('🔐 ProtectedRoute State:', {
-      token: token ? `Present (${token.substring(0, 20)}...)` : 'Missing',
-      user: user ? `Present (${user.username})` : 'Missing',
+    console.log('🔐 ProtectedRoute Debug:', {
+      path: location.pathname,
+      token: token ? `Yes (${token.substring(0, 10)}...)` : 'No',
+      user: user ? `Yes (${user.username})` : 'No',
       isAuthenticated,
       loading,
-      path: location.pathname,
-      hasCheckedAuth
+      isCheckingAuth,
+      timestamp: new Date().toISOString()
     });
-  }, [token, user, isAuthenticated, loading, location, hasCheckedAuth]);
+  }, [token, user, isAuthenticated, loading, location, isCheckingAuth]);
 
+  // Check authentication status on mount
   useEffect(() => {
-    console.log('🔄 ProtectedRoute useEffect triggered');
-    
-    const checkAuthentication = async () => {
-      // If we have a token but no user is loaded
-      if (token && !user && !loading) {
-        console.log('📡 Fetching user with token...');
-        try {
-          const result = await dispatch(getCurrentUser());
-          console.log('📡 getCurrentUser result:', result.meta.requestStatus);
-          
-          if (result.meta.requestStatus === 'rejected') {
-            console.error('❌ Failed to get user:', result.error?.message);
-          }
-        } catch (error) {
-          console.error('❌ getCurrentUser error:', error);
-        }
-      } else if (!token) {
-        console.log('❌ No token available');
-        const storedToken = localStorage.getItem('token');
-        console.log('🔍 Token in localStorage:', storedToken ? 'Yes' : 'No');
-      }
+    const initializeAuth = async () => {
+      console.log('🔍 ProtectedRoute: Checking auth status...');
       
-      setHasCheckedAuth(true);
+      // Get token from localStorage as fallback
+      const storedToken = localStorage.getItem('token');
+      console.log('🔑 Token in localStorage:', storedToken ? 'Yes' : 'No');
+      
+      // If we have a token in Redux or localStorage but no user, fetch user
+      if ((token || storedToken) && !user && !loading) {
+        console.log('📡 Fetching current user...');
+        try {
+          await dispatch(getCurrentUser()).unwrap();
+          console.log('✅ User fetched successfully');
+        } catch (error) {
+          console.error('❌ Failed to fetch user:', error);
+          // Clear invalid token
+          localStorage.removeItem('token');
+        }
+      }
     };
     
-    checkAuthentication();
+    initializeAuth();
   }, [dispatch, token, user, loading]);
 
-  // Show loading spinner
-  if (loading || (!hasCheckedAuth && token)) {
-    console.log('⏳ ProtectedRoute: Loading or checking auth...');
+  // Show loading spinner while checking authentication
+  if (loading || isCheckingAuth) {
+    console.log('⏳ ProtectedRoute: Loading...');
+    return <LoadingSpinner fullScreen />;
+  }
+
+  // If not authenticated, redirect to login
+  if (!isAuthenticated) {
+    console.log('🔒 ProtectedRoute: Not authenticated, redirecting to login');
+    console.log('📍 Current path:', location.pathname);
+    
+    return <Navigate 
+      to="/login" 
+      state={{ 
+        from: location.pathname,
+        message: 'Please log in to access this page'
+      }} 
+      replace 
+    />;
+  }
+
+  // If no user but we're "authenticated", something's wrong
+  if (!user && isAuthenticated) {
+    console.log('⚠️ ProtectedRoute: isAuthenticated but no user data');
     return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center',
-        height: '100vh',
-        flexDirection: 'column'
-      }}>
-        <LoadingSpinner fullScreen />
-        <p style={{ marginTop: '20px', color: '#666' }}>
-          {loading ? 'Loading...' : 'Checking authentication...'}
-        </p>
+      <div style={{ padding: '20px', textAlign: 'center' }}>
+        <h3>Authentication Error</h3>
+        <p>Unable to load user data. Please try logging in again.</p>
+        <button 
+          onClick={() => {
+            localStorage.clear();
+            window.location.href = '/login';
+          }}
+        >
+          Go to Login
+        </button>
       </div>
     );
   }
 
-  // Check if authenticated
-  if (!isAuthenticated || !user) {
-    console.log('🔒 ProtectedRoute: Not authenticated, redirecting to login');
-    console.log('📍 Redirecting from:', location.pathname, 'to /login');
-    
-    return <Navigate to="/login" state={{ from: location }} replace />;
-  }
-
+  // Success! User is authenticated
   console.log('✅ ProtectedRoute: User authenticated, rendering outlet');
+  console.log('👤 User:', user.username);
+  
   return <Outlet />;
 };
 
