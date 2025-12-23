@@ -1,12 +1,10 @@
-// client/src/pages/Home/Home.jsx - SIMPLIFIED VERSION
+// client/src/pages/Home/Home.jsx - FIXED VERSION
 import React, { useState, useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { 
   Video as LiveVideo,
-  Camera,
   Smile as Feeling,
   Image as Photo,
-  Search,
   Filter,
   TrendingUp,
   FileText as Newspaper,
@@ -108,9 +106,12 @@ const Home = () => {
         <div>Posts: {feed?.length || 0}</div>
       </div>
       
-      <div className="home-content">
+      {/* Main Content Area - This goes in the center column */}
+      <div className="home-main-content">
         {/* Stories */}
-        <StoryCarousel />
+        <div className="stories-section">
+          <StoryCarousel />
+        </div>
         
         {/* Create Post Card */}
         <div className="create-post-card">
