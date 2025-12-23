@@ -3,11 +3,14 @@ const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-const crypto = require('crypto'); // Added for secure token generation
+const crypto = require('crypto');
 const { check, validationResult } = require('express-validator');
 const User = require('../models/User');
 const { protect } = require('../middleware/auth');
-const rateLimit = require('express-rate-limit'); // Added for rate limiting
+const rateLimit = require('express-rate-limit');
+
+// Debug JWT secret
+console.log('🔑 JWT_SECRET loaded in auth routes:', process.env.JWT_SECRET ? 'Yes' : 'No (using fallback)');
 
 // Rate limiter for login attempts
 const loginLimiter = rateLimit({
@@ -21,20 +24,24 @@ const loginLimiter = rateLimit({
   legacyHeaders: false
 });
 
-// Inline token generator (since utils/helpers doesn't exist)
+// Inline token generator
 const generateToken = (userId) => {
+  const jwtSecret = process.env.JWT_SECRET || 'wavenet-default-secret-2024';
+  console.log('🔑 Generating token with secret:', jwtSecret === process.env.JWT_SECRET ? 'from env' : 'fallback');
+  
   return jwt.sign(
     { id: userId },
-    process.env.JWT_SECRET || 'wavenet-default-secret-2024',
+    jwtSecret,
     { expiresIn: process.env.JWT_EXPIRE || '7d' }
   );
 };
 
 // Generate refresh token
 const generateRefreshToken = (userId) => {
+  const jwtRefreshSecret = process.env.JWT_REFRESH_SECRET || 'wavenet-refresh-secret-2024';
   return jwt.sign(
     { id: userId },
-    process.env.JWT_REFRESH_SECRET || 'wavenet-refresh-secret-2024',
+    jwtRefreshSecret,
     { expiresIn: process.env.JWT_REFRESH_EXPIRE || '30d' }
   );
 };
@@ -56,6 +63,8 @@ router.post('/register', [
   const { username, email, password, firstName, lastName } = req.body;
 
   try {
+    console.log('📝 Registration attempt:', { username, email });
+    
     // Check if user exists
     let user = await User.findOne({ $or: [{ email }, { username }] });
     
@@ -87,10 +96,13 @@ router.post('/register', [
 
     // Save user
     await user.save();
+    console.log('✅ User registered:', user._id);
 
     // Generate tokens
     const accessToken = generateToken(user._id);
     const refreshToken = generateRefreshToken(user._id);
+    
+    console.log('🔑 Tokens generated. Access token length:', accessToken.length);
 
     // Remove password from response
     const userResponse = user.toObject();
@@ -103,7 +115,7 @@ router.post('/register', [
       user: userResponse
     });
   } catch (error) {
-    console.error('Registration error:', error);
+    console.error('❌ Registration error:', error);
     res.status(500).json({ 
       success: false, 
       message: 'Server error', 
@@ -128,10 +140,13 @@ router.post('/login', loginLimiter, [
   const { email, password } = req.body;
 
   try {
+    console.log('🔐 Login attempt for email:', email);
+    
     // Check for user
     const user = await User.findOne({ email: email.toLowerCase().trim() }).select('+password');
     
     if (!user) {
+      console.log('❌ Login failed: User not found');
       return res.status(401).json({ 
         success: false, 
         message: 'Invalid credentials' 
@@ -142,6 +157,7 @@ router.post('/login', loginLimiter, [
     const isMatch = await user.comparePassword(password);
     
     if (!isMatch) {
+      console.log('❌ Login failed: Password mismatch');
       return res.status(401).json({ 
         success: false, 
         message: 'Invalid credentials' 
@@ -155,6 +171,9 @@ router.post('/login', loginLimiter, [
     // Generate tokens
     const accessToken = generateToken(user._id);
     const refreshToken = generateRefreshToken(user._id);
+    
+    console.log('✅ Login successful for:', user.username);
+    console.log('🔑 Access token generated, length:', accessToken.length);
 
     // Remove password from response
     const userResponse = user.toObject();
@@ -167,7 +186,7 @@ router.post('/login', loginLimiter, [
       user: userResponse
     });
   } catch (error) {
-    console.error('Login error:', error);
+    console.error('❌ Login error:', error);
     res.status(500).json({ 
       success: false, 
       message: 'Server error' 
@@ -180,6 +199,8 @@ router.post('/login', loginLimiter, [
 // @access  Private
 router.get('/me', protect, async (req, res) => {
   try {
+    console.log('👤 GET /me - User ID:', req.user.id);
+    
     const user = await User.findById(req.user.id)
       .select('-password')
       .populate('friends.user', 'username profilePicture')
@@ -187,18 +208,20 @@ router.get('/me', protect, async (req, res) => {
       .populate('following', 'username profilePicture');
 
     if (!user) {
+      console.log('❌ GET /me - User not found in DB');
       return res.status(404).json({ 
         success: false, 
         message: 'User not found' 
       });
     }
 
+    console.log('✅ GET /me - Success for:', user.username);
     res.json({
       success: true,
       user
     });
   } catch (error) {
-    console.error('Get user error:', error);
+    console.error('❌ GET /me error:', error);
     res.status(500).json({ 
       success: false, 
       message: 'Server error' 
@@ -211,6 +234,8 @@ router.get('/me', protect, async (req, res) => {
 // @access  Private
 router.post('/logout', protect, async (req, res) => {
   try {
+    console.log('🚪 Logout request for user:', req.user.id);
+    
     // Update last active
     await User.findByIdAndUpdate(req.user.id, { 
       lastActive: new Date() 
@@ -221,7 +246,7 @@ router.post('/logout', protect, async (req, res) => {
       message: 'Logged out successfully' 
     });
   } catch (error) {
-    console.error('Logout error:', error);
+    console.error('❌ Logout error:', error);
     res.status(500).json({ 
       success: false, 
       message: 'Server error' 
@@ -267,10 +292,10 @@ router.post('/forgot-password', [
     
     await user.save();
 
-    // Create reset URL (adjust frontend URL as needed)
+    // Create reset URL
     const resetUrl = `${process.env.FRONTEND_URL || req.protocol}://${req.get('host')}/reset-password/${resetToken}`;
     
-    console.log('Password reset URL:', resetUrl); // Remove in production
+    console.log('🔑 Password reset URL:', resetUrl);
     
     // In production, send email here
     // await sendResetEmail(user.email, resetUrl);
@@ -278,12 +303,10 @@ router.post('/forgot-password', [
     res.json({
       success: true,
       message: 'Password reset email sent',
-      // Note: In production, do NOT send the resetToken in response
-      // It should only be sent via email
       resetToken: process.env.NODE_ENV === 'development' ? resetToken : undefined
     });
   } catch (error) {
-    console.error('Forgot password error:', error);
+    console.error('❌ Forgot password error:', error);
     res.status(500).json({ 
       success: false, 
       message: 'Server error' 
@@ -325,7 +348,7 @@ router.post('/reset-password/:token', [
       });
     }
 
-    // Update password (password hashing will be done by User model pre-save)
+    // Update password
     user.password = password;
     user.resetPasswordToken = undefined;
     user.resetPasswordExpire = undefined;
@@ -337,7 +360,7 @@ router.post('/reset-password/:token', [
       message: 'Password reset successful'
     });
   } catch (error) {
-    console.error('Reset password error:', error);
+    console.error('❌ Reset password error:', error);
     res.status(500).json({ 
       success: false, 
       message: 'Server error' 
@@ -359,10 +382,8 @@ router.post('/refresh-token', async (req, res) => {
   }
 
   try {
-    const decoded = jwt.verify(
-      refreshToken, 
-      process.env.JWT_REFRESH_SECRET || 'wavenet-refresh-secret-2024'
-    );
+    const jwtRefreshSecret = process.env.JWT_REFRESH_SECRET || 'wavenet-refresh-secret-2024';
+    const decoded = jwt.verify(refreshToken, jwtRefreshSecret);
     
     const user = await User.findById(decoded.id);
     
@@ -380,7 +401,7 @@ router.post('/refresh-token', async (req, res) => {
       accessToken: newAccessToken
     });
   } catch (error) {
-    console.error('Refresh token error:', error);
+    console.error('❌ Refresh token error:', error);
     
     if (error.name === 'TokenExpiredError') {
       return res.status(401).json({ 
@@ -392,6 +413,74 @@ router.post('/refresh-token', async (req, res) => {
     return res.status(401).json({ 
       success: false, 
       message: 'Invalid refresh token' 
+    });
+  }
+});
+
+// @route   POST /api/auth/debug-token
+// @desc    Debug token issues
+// @access  Public
+router.post('/debug-token', async (req, res) => {
+  const { token } = req.body;
+  
+  if (!token) {
+    return res.status(400).json({
+      success: false,
+      message: 'Token is required'
+    });
+  }
+  
+  try {
+    console.log('🔍 Debugging token, length:', token.length);
+    console.log('🔍 Token sample:', token.substring(0, 20) + '...');
+    
+    // Try with default secret first
+    const defaultSecret = 'wavenet-default-secret-2024';
+    const envSecret = process.env.JWT_SECRET;
+    
+    let decodedWithDefault, decodedWithEnv;
+    let defaultError, envError;
+    
+    // Try with default secret
+    try {
+      decodedWithDefault = jwt.verify(token, defaultSecret);
+      console.log('✅ Token valid with DEFAULT secret');
+    } catch (err) {
+      defaultError = err.message;
+      console.log('❌ Token invalid with DEFAULT secret:', err.message);
+    }
+    
+    // Try with env secret (if exists)
+    if (envSecret) {
+      try {
+        decodedWithEnv = jwt.verify(token, envSecret);
+        console.log('✅ Token valid with ENV secret');
+      } catch (err) {
+        envError = err.message;
+        console.log('❌ Token invalid with ENV secret:', err.message);
+      }
+    }
+    
+    // Always try to decode (without verification)
+    const decodedWithoutVerify = jwt.decode(token);
+    
+    res.json({
+      success: true,
+      tokenInfo: {
+        length: token.length,
+        decodedWithoutVerify,
+        validWithDefault: !!decodedWithDefault,
+        validWithEnv: !!decodedWithEnv,
+        defaultError,
+        envError,
+        envSecretExists: !!envSecret
+      }
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: 'Debug error',
+      error: error.message
     });
   }
 });
