@@ -25,56 +25,125 @@ const notificationRoutes = require('./routes/notifications');
 const app = express();
 const server = http.createServer(app);
 
+// FIX: Trust proxy for Render.com/Heroku/NGINX reverse proxies
+// This MUST be set before rate limiting middleware
+app.set('trust proxy', 1);
+
 // Determine client URL based on environment
 const isProduction = process.env.NODE_ENV === 'production';
-const CLIENT_URL = isProduction 
-  ? `http://localhost:${process.env.PORT || 5000}`
-  : process.env.CLIENT_URL || 'http://localhost:3000';
 
+// Configure allowed origins for CORS
+const allowedOrigins = [];
+if (isProduction) {
+  // Add your production frontend URLs
+  allowedOrigins.push('https://wavenet-wlnf.onrender.com');
+  // Add your custom domain if you have one
+  // allowedOrigins.push('https://yourdomain.com');
+} else {
+  // Development origins
+  allowedOrigins.push('http://localhost:3000');
+  allowedOrigins.push('http://localhost:5173'); // Vite dev server
+  allowedOrigins.push('http://localhost:8080');
+}
+
+// Get the primary client URL (first in the array)
+const CLIENT_URL = allowedOrigins[0];
+
+console.log('🌍 Environment:', isProduction ? 'Production' : 'Development');
+console.log('🔗 Primary Client URL:', CLIENT_URL);
+console.log('✅ Allowed Origins:', allowedOrigins);
+
+// Configure Socket.io
 const io = socketio(server, {
   cors: {
-    origin: CLIENT_URL,
-    credentials: true
-  }
+    origin: allowedOrigins,
+    credentials: true,
+    methods: ['GET', 'POST']
+  },
+  transports: ['websocket', 'polling']
 });
 
-// Rate limiting
+// Rate limiting configuration
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100 // limit each IP to 100 requests per windowMs
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: {
+    success: false,
+    message: 'Too many requests from this IP, please try again later'
+  },
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  skipFailedRequests: false,
+  skipSuccessfulRequests: false,
+  keyGenerator: (req) => {
+    // Use the client's real IP (trust proxy handles this)
+    return req.ip;
+  }
 });
 
 // Middleware
 app.use(helmet({
-  contentSecurityPolicy: false,
+  contentSecurityPolicy: false, // You might want to configure this properly for production
+  crossOriginEmbedderPolicy: false,
+  crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
+
 app.use(compression());
+
+// CORS configuration
 app.use(cors({
-  origin: CLIENT_URL,
-  credentials: true
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps, curl, postman)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      console.log('🚫 CORS blocked origin:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  exposedHeaders: ['Content-Disposition'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Apply rate limiting to API routes only
 app.use('/api', limiter);
 
 // Database connection
-mongoose.connect(process.env.MONGODB_URI, {
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/wavenet';
+mongoose.connect(MONGODB_URI, {
   useNewUrlParser: true,
-  useUnifiedTopology: true
+  useUnifiedTopology: true,
+  serverSelectionTimeoutMS: 5000,
+  socketTimeoutMS: 45000,
 })
-.then(() => console.log('Connected to MongoDB'))
-.catch(err => console.error('MongoDB connection error:', err));
+.then(() => {
+  console.log('✅ Connected to MongoDB');
+  console.log(`📊 Database: ${MONGODB_URI.split('@').pop() || MONGODB_URI}`);
+})
+.catch(err => {
+  console.error('❌ MongoDB connection error:', err.message);
+  console.log('Attempting to continue without database...');
+});
 
 // Socket.io for real-time features
 io.on('connection', (socket) => {
-  console.log('New client connected');
+  console.log('🔌 New client connected:', socket.id);
   
   socket.on('join-room', (roomId) => {
     socket.join(roomId);
+    console.log(`👥 Socket ${socket.id} joined room: ${roomId}`);
   });
   
   socket.on('send-message', (data) => {
     io.to(data.roomId).emit('receive-message', data);
+    console.log(`💬 Message sent to room ${data.roomId} by ${socket.id}`);
   });
   
   socket.on('typing', (data) => {
@@ -82,7 +151,7 @@ io.on('connection', (socket) => {
   });
   
   socket.on('disconnect', () => {
-    console.log('Client disconnected');
+    console.log('🔌 Client disconnected:', socket.id);
   });
 });
 
@@ -96,13 +165,18 @@ app.use('/api/notifications', notificationRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
-  res.status(200).json({ 
-    status: 'OK', 
+  const healthData = {
+    status: 'OK',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     mode: isProduction ? 'production' : 'development',
-    client: CLIENT_URL
-  });
+    client: CLIENT_URL,
+    database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+    memory: process.memoryUsage(),
+    nodeVersion: process.version
+  };
+  
+  res.status(200).json(healthData);
 });
 
 // Serve React app in production
@@ -115,7 +189,11 @@ if (isProduction) {
     console.log('✅ Serving React build from:', clientBuildPath);
     
     // Serve static files
-    app.use(express.static(clientBuildPath));
+    app.use(express.static(clientBuildPath, {
+      maxAge: '1y',
+      etag: true,
+      index: false
+    }));
     
     // Handle React routing
     app.get('*', (req, res, next) => {
@@ -125,6 +203,7 @@ if (isProduction) {
       }
       
       // Serve index.html for all other routes
+      console.log(`📄 Serving React for route: ${req.path}`);
       res.sendFile(clientIndexPath);
     });
   } else {
@@ -141,6 +220,10 @@ if (isProduction) {
           api: '/api',
           health: '/health',
           socket: '/socket.io'
+        },
+        environment: {
+          node_env: process.env.NODE_ENV,
+          port: process.env.PORT
         }
       });
     });
@@ -151,14 +234,19 @@ if (isProduction) {
     res.json({
       message: 'WaveNet Development API Server',
       mode: 'development',
-      client: 'React app should be running on ' + CLIENT_URL,
+      client: `React app should be running on ${CLIENT_URL}`,
+      instructions: 'Run the React dev server separately with: npm run dev',
       api: {
-        base: '/api',
+        base: 'http://localhost:' + (process.env.PORT || 5000) + '/api',
         auth: '/api/auth',
         users: '/api/users',
         posts: '/api/posts',
         messages: '/api/messages',
         socket: 'ws://localhost:' + (process.env.PORT || 5000)
+      },
+      links: {
+        react_dev: CLIENT_URL,
+        api_docs: 'http://localhost:' + (process.env.PORT || 5000) + '/health'
       }
     });
   });
@@ -166,38 +254,106 @@ if (isProduction) {
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  console.error('❌ Error:', err.stack);
+  
+  // Handle CORS errors
+  if (err.message === 'Not allowed by CORS') {
+    return res.status(403).json({
+      success: false,
+      message: 'CORS Error: Origin not allowed',
+      allowedOrigins: allowedOrigins,
+      yourOrigin: req.headers.origin
+    });
+  }
+  
   res.status(err.status || 500).json({
-    message: err.message || 'Something went wrong!',
-    error: process.env.NODE_ENV === 'development' ? err : {}
+    success: false,
+    message: err.message || 'Internal server error',
+    error: isProduction ? {} : err.stack
   });
 });
 
 // 404 handler for API routes
 app.use('/api/*', (req, res) => {
   res.status(404).json({ 
+    success: false,
     message: 'API route not found',
     path: req.path,
     available: {
-      auth: ['/api/auth/login', '/api/auth/register', '/api/auth/me'],
-      users: '/api/users',
-      posts: '/api/posts',
-      messages: '/api/messages'
+      auth: [
+        'POST /api/auth/register',
+        'POST /api/auth/login', 
+        'GET /api/auth/me',
+        'POST /api/auth/logout'
+      ],
+      users: 'GET /api/users',
+      posts: 'GET /api/posts',
+      messages: 'GET /api/messages',
+      health: 'GET /health'
     }
   });
 });
 
+// Global 404 handler (for non-API routes in production)
+app.use('*', (req, res) => {
+  if (isProduction) {
+    // In production, if React build exists, it should handle 404s
+    const clientIndexPath = path.join(__dirname, '../client/dist/index.html');
+    if (fs.existsSync(clientIndexPath)) {
+      return res.sendFile(clientIndexPath);
+    }
+  }
+  
+  res.status(404).json({
+    success: false,
+    message: 'Route not found',
+    path: req.path,
+    mode: isProduction ? 'production' : 'development'
+  });
+});
+
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
+  console.log('\n' + '='.repeat(50));
   console.log(`🚀 WaveNet server started on port ${PORT}`);
-  console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log('='.repeat(50));
+  console.log(`🌐 Environment: ${isProduction ? 'Production' : 'Development'}`);
   console.log(`🔗 Health endpoint: http://localhost:${PORT}/health`);
   console.log(`⚡ Socket.io: ws://localhost:${PORT}`);
+  console.log(`🔒 Trust proxy: Enabled`);
+  console.log(`🎯 Rate limiting: Enabled (100 requests/15min)`);
   
   if (isProduction) {
-    console.log(`🎨 Frontend: http://localhost:${PORT}`);
+    console.log(`🎨 Frontend: ${CLIENT_URL}`);
+    console.log(`📁 Serving React: ${fs.existsSync(path.join(__dirname, '../client/dist')) ? 'Yes' : 'No'}`);
   } else {
     console.log(`💻 React dev server: ${CLIENT_URL}`);
-    console.log(`📡 API: http://localhost:${PORT}/api`);
+    console.log(`📡 API Base URL: http://localhost:${PORT}/api`);
   }
+  
+  console.log('='.repeat(50) + '\n');
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received. Closing server gracefully...');
+  server.close(() => {
+    console.log('Server closed');
+    mongoose.connection.close(false, () => {
+      console.log('MongoDB connection closed');
+      process.exit(0);
+    });
+  });
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err);
+  // Don't exit in production, try to recover
+  if (!isProduction) {
+    process.exit(1);
+  }
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
 });
