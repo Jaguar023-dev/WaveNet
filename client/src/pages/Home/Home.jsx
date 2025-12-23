@@ -1,4 +1,4 @@
-// client/src/pages/Home/Home.jsx - FIXED VERSION
+// client/src/pages/Home/Home.jsx - SIMPLIFIED
 import React, { useState, useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { 
@@ -28,31 +28,13 @@ const Home = () => {
   const { user } = useSelector(state => state.auth);
   const feedRef = useRef(null);
 
-  console.log('🏠 Home component MOUNTED!');
-  console.log('👤 User:', user);
-  console.log('📊 Feed length:', feed?.length);
+  console.log('🏠 Home component rendering');
 
   // Fetch initial feed
   useEffect(() => {
-    console.log('📡 Home: Fetching feed...');
+    console.log('📡 Fetching feed...');
     dispatch(clearPosts());
     loadFeed(1);
-    
-    // Set up infinite scroll
-    const handleScroll = () => {
-      if (!feedRef.current || loadingMore || !hasMore) return;
-      
-      const { scrollTop, scrollHeight, clientHeight } = feedRef.current;
-      if (scrollHeight - scrollTop <= clientHeight * 1.5) {
-        loadMore();
-      }
-    };
-    
-    const feedElement = feedRef.current;
-    if (feedElement) {
-      feedElement.addEventListener('scroll', handleScroll);
-      return () => feedElement.removeEventListener('scroll', handleScroll);
-    }
   }, []);
 
   const loadFeed = async (pageNum) => {
@@ -68,14 +50,7 @@ const Home = () => {
     }
   };
 
-  const loadMore = () => {
-    if (!loadingMore && hasMore) {
-      loadFeed(page + 1);
-    }
-  };
-
   const handlePostCreated = () => {
-    // Refresh feed with new post
     dispatch(clearPosts());
     loadFeed(1);
   };
@@ -88,125 +63,104 @@ const Home = () => {
 
   return (
     <div className="home-container">
-      {/* DEBUG OVERLAY - Remove in production */}
-      <div style={{
-        position: 'fixed',
-        top: '10px',
-        left: '10px',
-        backgroundColor: 'rgba(0,0,0,0.8)',
-        color: 'white',
-        padding: '10px',
-        borderRadius: '5px',
-        fontSize: '12px',
-        zIndex: 9999
-      }}>
-        <strong>Home Component Status:</strong>
-        <div>✅ Component Loaded</div>
-        <div>User: {user?.username || 'None'}</div>
-        <div>Posts: {feed?.length || 0}</div>
+      {/* Stories */}
+      <div className="stories-section">
+        <StoryCarousel />
       </div>
       
-      {/* Main Content Area - This goes in the center column */}
-      <div className="home-main-content">
-        {/* Stories */}
-        <div className="stories-section">
-          <StoryCarousel />
+      {/* Create Post Card */}
+      <div className="create-post-card">
+        <div className="create-post-header">
+          <img 
+            src={user?.profile?.profilePicture?.url || '/default-avatar.png'} 
+            alt={user?.username}
+            className="user-avatar-small"
+          />
+          <button 
+            className="create-post-input"
+            onClick={() => setShowCreatePost(true)}
+          >
+            What's on your mind, {user?.username}?
+          </button>
         </div>
         
-        {/* Create Post Card */}
-        <div className="create-post-card">
-          <div className="create-post-header">
-            <img 
-              src={user?.profile?.profilePicture?.url || '/default-avatar.png'} 
-              alt={user?.username}
-              className="user-avatar-small"
-            />
+        <div className="quick-actions">
+          {quickActions.map((action, index) => (
+            <button key={index} className="quick-action-btn">
+              <span className={`action-icon ${action.color}`}>
+                {action.icon}
+              </span>
+              <span className="action-label">{action.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Feed Filter */}
+      <div className="feed-filter">
+        <button className="filter-btn active">
+          <Newspaper size={18} />
+          <span>All Posts</span>
+        </button>
+        <button className="filter-btn">
+          <TrendingUp size={18} />
+          <span>Trending</span>
+        </button>
+        <button className="filter-btn">
+          <Calendar size={18} />
+          <span>Events</span>
+        </button>
+        <button className="filter-btn">
+          <Filter size={18} />
+          <span>Filters</span>
+        </button>
+      </div>
+
+      {/* Posts Feed */}
+      <div className="posts-feed" ref={feedRef}>
+        {loading && page === 1 ? (
+          <LoadingSpinner text="Loading posts..." />
+        ) : error ? (
+          <div className="error-message">
+            <p>Error loading posts: {error}</p>
             <button 
-              className="create-post-input"
-              onClick={() => setShowCreatePost(true)}
+              onClick={() => loadFeed(1)}
+              className="retry-btn"
             >
-              What's on your mind, {user?.username}?
+              Retry
             </button>
           </div>
-          
-          <div className="quick-actions">
-            {quickActions.map((action, index) => (
-              <button key={index} className="quick-action-btn">
-                <span className={`action-icon ${action.color}`}>
-                  {action.icon}
-                </span>
-                <span className="action-label">{action.label}</span>
-              </button>
-            ))}
+        ) : feed.length === 0 ? (
+          <div className="empty-feed">
+            <div className="empty-illustration">
+              <svg className="w-24 h-24 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+            <h3>No posts yet</h3>
+            <p>Start following people or join groups to see posts in your feed.</p>
+            <button className="explore-btn">Explore WaveNet</button>
           </div>
-        </div>
-
-        {/* Feed Filter */}
-        <div className="feed-filter">
-          <button className="filter-btn active">
-            <Newspaper size={18} />
-            <span>All Posts</span>
-          </button>
-          <button className="filter-btn">
-            <TrendingUp size={18} />
-            <span>Trending</span>
-          </button>
-          <button className="filter-btn">
-            <Calendar size={18} />
-            <span>Events</span>
-          </button>
-          <button className="filter-btn">
-            <Filter size={18} />
-            <span>Filters</span>
-          </button>
-        </div>
-
-        {/* Posts Feed */}
-        <div className="posts-feed" ref={feedRef}>
-          {loading && page === 1 ? (
-            <LoadingSpinner text="Loading posts..." />
-          ) : error ? (
-            <div className="error-message">
-              <p>Error loading posts: {error}</p>
-              <button 
-                onClick={() => loadFeed(1)}
-                className="retry-btn"
-              >
-                Retry
-              </button>
-            </div>
-          ) : feed.length === 0 ? (
-            <div className="empty-feed">
-              <div className="empty-illustration">
-                <svg className="w-24 h-24 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
+        ) : (
+          <>
+            {feed.map(post => (
+              <Post key={post._id} post={post} />
+            ))}
+            
+            {loadingMore && (
+              <div className="loading-more">
+                <LoadingSpinner size="small" text="Loading more posts..." />
               </div>
-              <h3>No posts yet</h3>
-              <p>Start following people or join groups to see posts in your feed.</p>
-              <button className="explore-btn">Explore WaveNet</button>
-            </div>
-          ) : (
-            <>
-              {feed.map(post => (
-                <Post key={post._id} post={post} />
-              ))}
-              
-              {loadingMore && (
-                <div className="loading-more">
-                  <LoadingSpinner size="small" text="Loading more posts..." />
-                </div>
-              )}
-              
-              {!hasMore && feed.length > 0 && (
-                <div className="end-of-feed">
-                  <p>You're all caught up! 🎉</p>
-                  <p className="text-sm text-gray-500">Check back later for new posts</p>
-                </div>
-              )}
-            </>
-          )}
-        </div>
+            )}
+            
+            {!hasMore && feed.length > 0 && (
+              <div className="end-of-feed">
+                <p>You're all caught up! 🎉</p>
+                <p className="text-sm text-gray-500">Check back later for new posts</p>
+              </div>
+            )}
+          </>
+        )}
       </div>
 
       {/* Create Post Modal */}
