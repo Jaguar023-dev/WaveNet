@@ -1,23 +1,14 @@
-/* client/src/pages/Home/Home.css - UPDATED FOR LAYOUT */
+/* client/src/pages/Home/Home.css */
 
-/* Home container should take full width of main content area */
+/* Reset and Base Styles */
 .home-container {
-  flex: 1;
-  min-height: 100vh;
-  background-color: #f0f2f5;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-  color: #050505;
-  padding: 20px 0;
-}
-
-/* Main content area - centered within layout */
-.home-main-content {
-  max-width: 680px;
-  margin: 0 auto;
-  padding: 0 20px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
+  width: 100%;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 16px;
 }
 
 /* Stories Section */
@@ -26,7 +17,7 @@
   border-radius: 10px;
   padding: 16px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  margin-bottom: 16px;
+  margin-bottom: 4px;
   overflow-x: auto;
   white-space: nowrap;
   scrollbar-width: none;
@@ -58,6 +49,7 @@
   border-radius: 50%;
   object-fit: cover;
   border: 1px solid #e4e6eb;
+  flex-shrink: 0;
 }
 
 .create-post-input {
@@ -73,10 +65,17 @@
   transition: background-color 0.2s;
   font-family: inherit;
   font-weight: 400;
+  outline: none;
+  min-height: 44px;
 }
 
 .create-post-input:hover {
   background-color: #e4e6e9;
+}
+
+.create-post-input:focus {
+  background-color: white;
+  box-shadow: 0 0 0 2px #1877f2;
 }
 
 .quick-actions {
@@ -98,7 +97,7 @@
   border: none;
   border-radius: 6px;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.2s;
   color: #65676b;
   font-size: 14px;
   font-weight: 500;
@@ -167,6 +166,7 @@
   color: #65676b;
   white-space: nowrap;
   min-height: 36px;
+  flex-shrink: 0;
 }
 
 .filter-btn:hover {
@@ -191,7 +191,7 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-  margin-bottom: 20px;
+  margin-bottom: 40px;
 }
 
 /* Error Message */
@@ -207,6 +207,7 @@
   color: #65676b;
   margin-bottom: 20px;
   font-size: 15px;
+  line-height: 1.5;
 }
 
 .retry-btn {
@@ -237,6 +238,8 @@
 
 .empty-illustration {
   margin-bottom: 24px;
+  display: flex;
+  justify-content: center;
 }
 
 .empty-illustration svg {
@@ -305,6 +308,7 @@
 .end-of-feed p.text-sm {
   font-size: 13px;
   color: #65676b;
+  margin: 0;
 }
 
 /* Modal Overlay */
@@ -373,6 +377,7 @@
   justify-content: center;
   transition: background-color 0.2s;
   line-height: 1;
+  font-family: inherit;
 }
 
 .close-modal:hover {
@@ -414,21 +419,59 @@
   transform: scale(0.95);
 }
 
+/* Loading Spinner Styles */
+.loading-spinner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  background-color: white;
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f0f2f5;
+  border-top-color: #1877f2;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+.spinner.small {
+  width: 24px;
+  height: 24px;
+  border-width: 3px;
+  margin-bottom: 8px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-text {
+  color: #65676b;
+  font-size: 14px;
+  text-align: center;
+  margin: 0;
+}
+
 /* Responsive Design */
-@media (max-width: 900px) {
-  .home-main-content {
-    max-width: 100%;
-    padding: 0 16px;
+@media (max-width: 1024px) {
+  .home-container {
+    max-width: 600px;
   }
 }
 
 @media (max-width: 768px) {
   .home-container {
-    padding: 0;
-  }
-  
-  .home-main-content {
     padding: 0 12px;
+    max-width: 100%;
   }
   
   .stories-section,
@@ -502,52 +545,67 @@
   .modal-overlay {
     padding: 0;
   }
-}
-
-/* Loading Spinner Styles */
-.loading-spinner {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 40px;
-  background-color: white;
-  border-radius: 10px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid #f0f2f5;
-  border-top-color: #1877f2;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 16px;
-}
-
-.spinner.small {
-  width: 24px;
-  height: 24px;
-  border-width: 3px;
-  margin-bottom: 8px;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
+  
+  .error-message,
+  .empty-feed {
+    padding: 30px 20px;
   }
 }
 
-.loading-text {
-  color: #65676b;
-  font-size: 14px;
-  text-align: center;
+@media (max-width: 480px) {
+  .home-container {
+    padding: 0 8px;
+    gap: 16px;
+  }
+  
+  .stories-section,
+  .create-post-card,
+  .feed-filter,
+  .error-message,
+  .empty-feed,
+  .loading-more,
+  .end-of-feed {
+    margin-left: -8px;
+    margin-right: -8px;
+    width: calc(100% + 16px);
+  }
+  
+  .create-post-card {
+    padding: 12px;
+  }
+  
+  .user-avatar-small {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .quick-action-btn {
+    min-height: 50px;
+  }
+  
+  .action-label {
+    font-size: 10px;
+  }
+  
+  .empty-feed h3 {
+    font-size: 18px;
+  }
+  
+  .empty-feed p {
+    font-size: 14px;
+  }
 }
 
-/* Force important for icon sizes to override any other CSS */
+/* Text utility classes */
+.text-red-500 { color: #f02849 !important; }
+.text-green-500 { color: #45bd62 !important; }
+.text-yellow-500 { color: #f7b928 !important; }
+.text-gray-300 { color: #dadde1 !important; }
+.text-gray-500 { color: #65676b !important; }
+.text-sm { font-size: 13px !important; }
+
+/* Ensure icons have proper sizing */
 .quick-action-btn svg,
 .filter-btn svg {
-  width: 20px !important;
-  height: 20px !important;
+  flex-shrink: 0;
 }
