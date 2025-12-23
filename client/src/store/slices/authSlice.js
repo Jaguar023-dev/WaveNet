@@ -27,6 +27,32 @@ export const login = createAsyncThunk(
   }
 );
 
+// ADD THIS FUNCTION - It was missing!
+export const getCurrentUser = createAsyncThunk(
+  'auth/getCurrentUser',
+  async (_, { rejectWithValue }) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        return rejectWithValue('No token found');
+      }
+      
+      const response = await axios.get('/api/auth/me', {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      return response.data;
+    } catch (error) {
+      // If token is invalid, clear it
+      if (error.response?.status === 401) {
+        localStorage.removeItem('token');
+      }
+      return rejectWithValue(error.response?.data?.message || 'Failed to get user');
+    }
+  }
+);
+
 const authSlice = createSlice({
   name: 'auth',
   initialState: {
@@ -42,9 +68,15 @@ const authSlice = createSlice({
       state.user = null;
       state.token = null;
       state.isAuthenticated = false;
+      state.error = null;
     },
     clearError: (state) => {
       state.error = null;
+    },
+    // Optional: Add a setToken reducer if needed
+    setToken: (state, action) => {
+      state.token = action.payload;
+      localStorage.setItem('token', action.payload);
     }
   },
   extraReducers: (builder) => {
@@ -80,9 +112,27 @@ const authSlice = createSlice({
       .addCase(login.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+      })
+      // ADD THIS: getCurrentUser cases
+      .addCase(getCurrentUser.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(getCurrentUser.fulfilled, (state, action) => {
+        state.loading = false;
+        state.user = action.payload.user;
+        state.isAuthenticated = true;
+      })
+      .addCase(getCurrentUser.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+        state.isAuthenticated = false;
+        state.user = null;
+        state.token = null;
+        localStorage.removeItem('token');
       });
   }
 });
 
-export const { logout, clearError } = authSlice.actions;
+export const { logout, clearError, setToken } = authSlice.actions;
 export default authSlice.reducer;
