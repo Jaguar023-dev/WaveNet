@@ -1,4 +1,4 @@
-// client/src/App.jsx - Add a 404 fallback route
+// client/src/App.jsx
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Provider } from 'react-redux';
@@ -30,14 +30,14 @@ function App() {
     <Provider store={store}>
       <Router>
         <Routes>
-          {/* Public Routes */}
+          {/* Public Routes - No Layout */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           
-          {/* Protected Routes */}
+          {/* Protected Routes with Layout */}
           <Route element={<ProtectedRoute />}>
             <Route element={<Layout />}>
-              <Route path="/" element={<Home />} />
+              <Route path="/home" element={<Home />} />
               <Route path="/profile/:id" element={<Profile />} />
               <Route path="/friends" element={<Friends />} />
               <Route path="/groups" element={<Groups />} />
@@ -49,8 +49,15 @@ function App() {
             </Route>
           </Route>
           
-          {/* Fallback routes */}
-          <Route path="/" element={<Navigate to="/login" replace />} />
+          {/* Redirect root to /home if authenticated, /login if not */}
+          <Route 
+            path="/" 
+            element={
+              <Navigate to="/home" replace />
+            } 
+          />
+          
+          {/* Fallback route */}
           <Route path="*" element={
             <div style={{ 
               padding: '40px',
