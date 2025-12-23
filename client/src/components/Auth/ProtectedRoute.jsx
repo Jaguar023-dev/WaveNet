@@ -2,85 +2,114 @@
 import React, { useEffect } from 'react';
 import { Navigate, useLocation, Outlet } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import { getCurrentUser, checkAuthStatus } from '../../store/slices/authSlice';
+import { getCurrentUser, setInitialized } from '../../store/slices/authSlice';
 import LoadingSpinner from '../Common/LoadingSpinner';
 
 const ProtectedRoute = () => {
   const dispatch = useDispatch();
   const location = useLocation();
-  const { isAuthenticated, loading, token, user, isCheckingAuth } = useSelector(state => state.auth);
+  const { 
+    user, 
+    token, 
+    loading, 
+    isAuthenticated, 
+    initialized,
+    error 
+  } = useSelector(state => state.auth);
   
   // Debug logging
   useEffect(() => {
-    console.log('🔐 ProtectedRoute Debug:', {
+    console.log('🔐 ProtectedRoute State:', {
       path: location.pathname,
-      token: token ? `Yes (${token.substring(0, 10)}...)` : 'No',
+      token: token ? `Yes (${token.substring(0, 15)}...)` : 'No',
       user: user ? `Yes (${user.username})` : 'No',
       isAuthenticated,
       loading,
-      isCheckingAuth,
-      timestamp: new Date().toISOString()
+      initialized,
+      error
     });
-  }, [token, user, isAuthenticated, loading, location, isCheckingAuth]);
+  }, [token, user, isAuthenticated, loading, location, initialized, error]);
 
-  // Check authentication status on mount
+  // Check authentication on mount
   useEffect(() => {
-    const initializeAuth = async () => {
-      console.log('🔍 ProtectedRoute: Checking auth status...');
+    const checkAuth = async () => {
+      // Skip if already initialized
+      if (initialized) {
+        console.log('✅ Auth already initialized');
+        return;
+      }
       
-      // Get token from localStorage as fallback
-      const storedToken = localStorage.getItem('token');
-      console.log('🔑 Token in localStorage:', storedToken ? 'Yes' : 'No');
+      console.log('🔄 ProtectedRoute: Checking authentication...');
       
-      // If we have a token in Redux or localStorage but no user, fetch user
-      if ((token || storedToken) && !user && !loading) {
-        console.log('📡 Fetching current user...');
+      // Check if we have a token
+      const hasToken = token || localStorage.getItem('token');
+      
+      if (hasToken && !user) {
+        console.log('📡 Fetching user data with token...');
         try {
           await dispatch(getCurrentUser()).unwrap();
-          console.log('✅ User fetched successfully');
-        } catch (error) {
-          console.error('❌ Failed to fetch user:', error);
-          // Clear invalid token
-          localStorage.removeItem('token');
+          console.log('✅ User data fetched successfully');
+        } catch (err) {
+          console.error('❌ Failed to fetch user:', err);
         }
+      } else if (!hasToken) {
+        console.log('❌ No token available');
       }
+      
+      // Mark as initialized even if no token
+      dispatch(setInitialized());
     };
     
-    initializeAuth();
-  }, [dispatch, token, user, loading]);
+    checkAuth();
+  }, [dispatch, token, user, initialized]);
 
-  // Show loading spinner while checking authentication
-  if (loading || isCheckingAuth) {
-    console.log('⏳ ProtectedRoute: Loading...');
+  // Show loading while checking auth
+  if (loading || !initialized) {
+    console.log('⏳ ProtectedRoute: Loading or checking auth...');
     return <LoadingSpinner fullScreen />;
   }
 
   // If not authenticated, redirect to login
   if (!isAuthenticated) {
     console.log('🔒 ProtectedRoute: Not authenticated, redirecting to login');
-    console.log('📍 Current path:', location.pathname);
+    console.log('📍 From:', location.pathname);
     
-    return <Navigate 
-      to="/login" 
-      state={{ 
-        from: location.pathname,
-        message: 'Please log in to access this page'
-      }} 
-      replace 
-    />;
+    return (
+      <Navigate 
+        to="/login" 
+        state={{ 
+          from: location,
+          reason: 'authentication-required'
+        }} 
+        replace 
+      />
+    );
   }
 
-  // If no user but we're "authenticated", something's wrong
+  // If authenticated but no user data (shouldn't happen but just in case)
   if (!user && isAuthenticated) {
-    console.log('⚠️ ProtectedRoute: isAuthenticated but no user data');
+    console.log('⚠️ ProtectedRoute: Authenticated but no user data');
     return (
-      <div style={{ padding: '20px', textAlign: 'center' }}>
+      <div style={{ 
+        padding: '40px', 
+        textAlign: 'center',
+        fontFamily: 'Arial, sans-serif'
+      }}>
         <h3>Authentication Error</h3>
-        <p>Unable to load user data. Please try logging in again.</p>
+        <p>User data could not be loaded. Please try logging in again.</p>
         <button 
           onClick={() => {
             localStorage.clear();
             window.location.href = '/login';
+          }}
+          style={{
+            padding: '10px 20px',
+            backgroundColor: '#1877f2',
+            color: 'white',
+            border: 'none',
+            borderRadius: '5px',
+            cursor: 'pointer',
+            marginTop: '20px'
           }}
         >
           Go to Login
@@ -89,9 +118,9 @@ const ProtectedRoute = () => {
     );
   }
 
-  // Success! User is authenticated
+  // Success - user is authenticated
   console.log('✅ ProtectedRoute: User authenticated, rendering outlet');
-  console.log('👤 User:', user.username);
+  console.log('👤 Welcome,', user.username);
   
   return <Outlet />;
 };
