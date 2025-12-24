@@ -6,6 +6,7 @@
   gap: 16px;
   width: 100%;
   position: relative;
+  padding-bottom: 20px;
 }
 
 /* Debug Info - Remove in production */
@@ -20,6 +21,7 @@
   font-size: 12px;
   z-index: 9999;
   max-width: 200px;
+  display: none; /* Hide by default, enable for debugging */
 }
 
 .debug-info div {
@@ -32,6 +34,7 @@
   border-radius: 8px;
   padding: 12px 16px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  margin-bottom: 8px;
 }
 
 .user-profile-row {
@@ -62,6 +65,7 @@
   transition: background-color 0.2s;
   font-family: inherit;
   outline: none;
+  min-height: 40px;
 }
 
 .whats-on-mind:hover {
@@ -75,7 +79,6 @@
   border: none;
   background: #f0f2f5;
   color: #45bd62;
-  font-size: 20px;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -89,6 +92,12 @@
   transform: scale(1.05);
 }
 
+.photo-btn svg {
+  width: 20px;
+  height: 20px;
+  color: #45bd62;
+}
+
 /* Stories Section */
 .stories-section {
   background: white;
@@ -98,6 +107,7 @@
   overflow-x: auto;
   white-space: nowrap;
   scrollbar-width: none;
+  margin-bottom: 8px;
 }
 
 .stories-section::-webkit-scrollbar {
@@ -116,7 +126,6 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-  margin-bottom: 40px;
 }
 
 /* Error Message */
@@ -165,7 +174,7 @@
   margin-bottom: 20px;
 }
 
-.empty-illustration i {
+.newspaper-icon {
   font-size: 64px;
   color: #dadde1;
 }
@@ -246,6 +255,12 @@
   justify-content: center;
   z-index: 10000;
   padding: 20px;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .modal-container {
@@ -263,12 +278,23 @@
   border-radius: 12px;
   text-align: center;
   color: #65676b;
+  font-size: 14px;
+}
+
+/* Text utility classes */
+.text-sm {
+  font-size: 13px !important;
 }
 
 /* Responsive */
 @media (max-width: 768px) {
+  .home-container {
+    gap: 12px;
+  }
+  
   .create-post-section {
     padding: 12px;
+    margin-bottom: 6px;
   }
   
   .profile-pic-small {
@@ -279,16 +305,22 @@
   .whats-on-mind {
     font-size: 14px;
     padding: 8px 12px;
+    min-height: 36px;
   }
   
   .photo-btn {
     width: 36px;
     height: 36px;
-    font-size: 18px;
+  }
+  
+  .photo-btn svg {
+    width: 18px;
+    height: 18px;
   }
   
   .stories-section {
     padding: 12px;
+    margin-bottom: 6px;
   }
   
   .error-message,
@@ -301,21 +333,23 @@
   .modal-overlay {
     padding: 0;
     background: rgba(0, 0, 0, 0.8);
+    align-items: flex-start;
+    padding-top: 20px;
   }
   
   .modal-container {
     max-width: 100%;
-    max-height: 100vh;
+    max-height: calc(100vh - 40px);
   }
   
-  .debug-info {
-    display: none; /* Hide debug on mobile */
+  .newspaper-icon {
+    font-size: 48px;
   }
 }
 
 @media (max-width: 480px) {
   .home-container {
-    gap: 12px;
+    gap: 10px;
   }
   
   .create-post-section {
@@ -330,12 +364,17 @@
   .whats-on-mind {
     font-size: 13px;
     padding: 6px 10px;
+    min-height: 32px;
   }
   
   .photo-btn {
     width: 32px;
     height: 32px;
-    font-size: 16px;
+  }
+  
+  .photo-btn svg {
+    width: 16px;
+    height: 16px;
   }
   
   .stories-section {
@@ -348,5 +387,11 @@
   
   .empty-feed p {
     font-size: 14px;
+  }
+  
+  .explore-btn,
+  .retry-btn {
+    padding: 8px 20px;
+    font-size: 13px;
   }
 }
