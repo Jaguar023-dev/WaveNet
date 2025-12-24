@@ -2,10 +2,11 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
-const { protect } = require('../middleware/auth');  // Changed: destructure protect
-const upload = require('../middleware/upload');
+const { protect } = require('../middleware/auth');
+const { upload } = require('../middleware/upload');  // Changed: destructure upload
 const { validateUserUpdate } = require('../utils/validators');
-const mongoose = require('mongoose');  // Added: needed for stats route
+const mongoose = require('mongoose');
+
 
 // @route   GET /api/users/me
 // @desc    Get current user's profile
