@@ -21,6 +21,8 @@ const postRoutes = require('./routes/posts');
 const groupRoutes = require('./routes/groups');
 const messageRoutes = require('./routes/messages');
 const notificationRoutes = require('./routes/notifications');
+// ADD VERIFICATION ROUTES - NEW LINE
+const verificationRoutes = require('./routes/verification');
 
 // Initialize Express app
 const app = express();
@@ -240,6 +242,8 @@ app.use('/api/posts', postRoutes);
 app.use('/api/groups', groupRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/notifications', notificationRoutes);
+// ADD VERIFICATION ROUTE - NEW LINE
+app.use('/api/verification', verificationRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -325,7 +329,8 @@ if (isProduction) {
           api: '/api',
           health: '/health',
           socket: '/socket.io',
-          adminCheck: '/api/admin/check'
+          adminCheck: '/api/admin/check',
+          verification: '/api/verification' // ADDED TO ENDPOINTS LIST
         },
         environment: {
           node_env: process.env.NODE_ENV,
@@ -354,6 +359,7 @@ if (isProduction) {
         users: '/api/users',
         posts: '/api/posts',
         messages: '/api/messages',
+        verification: '/api/verification', // ADDED TO API LIST
         socket: 'ws://localhost:' + (process.env.PORT || 5000)
       },
       links: {
@@ -401,6 +407,7 @@ app.use('/api/*', (req, res) => {
       users: 'GET /api/users',
       posts: 'GET /api/posts',
       messages: 'GET /api/messages',
+      verification: 'GET /api/verification', // ADDED TO AVAILABLE ROUTES
       health: 'GET /health',
       adminCheck: 'GET /api/admin/check'
     }
