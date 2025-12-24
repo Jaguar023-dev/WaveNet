@@ -9,6 +9,12 @@ import StoryCarousel from '../../components/Story/StoryCarousel';
 import LoadingSpinner from '../../components/Common/LoadingSpinner';
 import './Home.css';
 
+// Debug: Check if imports are working
+console.log('🏠 Home.jsx loaded');
+console.log('📦 fetchFeed imported:', !!fetchFeed);
+console.log('📦 clearPosts imported:', !!clearPosts);
+console.log('📦 Post component imported:', !!Post);
+
 // Lazy load CreatePost to avoid duplication
 const CreatePost = lazy(() => import('../../components/Post/CreatePost'));
 
@@ -24,8 +30,21 @@ const Home = () => {
   const { user } = useSelector(state => state.auth);
   const feedRef = useRef(null);
 
+  // Debug Redux state
+  console.log('🔍 Redux State:', {
+    user: user?.username,
+    feedLength: feed?.length,
+    loading,
+    error,
+    hasMore,
+    page
+  });
+
   // Fetch initial feed
   useEffect(() => {
+    console.log('🔄 useEffect triggered');
+    console.log('📤 Dispatching clearPosts and loadFeed');
+    
     dispatch(clearPosts());
     loadFeed(1);
     
@@ -47,25 +66,36 @@ const Home = () => {
   }, []);
 
   const loadFeed = async (pageNum) => {
+    console.log(`📥 loadFeed called - page: ${pageNum}`);
     try {
       setLoadingMore(true);
       const result = await dispatch(fetchFeed({ page: pageNum, limit: 10 })).unwrap();
+      console.log('✅ Feed loaded successfully:', {
+        postsCount: result.posts?.length,
+        hasMore: result.hasMore
+      });
       setHasMore(result.hasMore);
       setPage(pageNum);
     } catch (error) {
-      console.error('Error loading feed:', error);
+      console.error('❌ Error loading feed:', error);
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack
+      });
     } finally {
       setLoadingMore(false);
     }
   };
 
   const loadMore = () => {
+    console.log('⬇️ loadMore triggered');
     if (!loadingMore && hasMore) {
       loadFeed(page + 1);
     }
   };
 
   const handlePostCreated = () => {
+    console.log('📝 Post created, refreshing feed');
     dispatch(clearPosts());
     loadFeed(1);
     setShowCreatePost(false);
@@ -73,6 +103,7 @@ const Home = () => {
 
   // Handle profile click
   const handleProfileClick = () => {
+    console.log('👤 Profile clicked, user ID:', user?._id);
     if (user?._id) {
       navigate(`/profile/${user._id}`);
     }
@@ -80,6 +111,22 @@ const Home = () => {
 
   return (
     <div className="home-container">
+      {/* Debug info - you can remove this after fixing */}
+      <div style={{
+        background: '#f0f2f5',
+        padding: '8px',
+        borderRadius: '8px',
+        marginBottom: '16px',
+        fontSize: '12px',
+        color: '#65676b'
+      }}>
+        <strong>Debug Info:</strong>
+        <div>User: {user?.username || 'Loading...'}</div>
+        <div>Posts in feed: {feed?.length || 0}</div>
+        <div>Error: {error || 'None'}</div>
+        <div>Loading: {loading ? 'Yes' : 'No'}</div>
+      </div>
+      
       {/* User Profile and Create Post Button */}
       <div className="create-post-section">
         <div className="user-profile-row">
@@ -131,6 +178,9 @@ const Home = () => {
         ) : error ? (
           <div className="error-message">
             <p>Error loading posts: {error}</p>
+            <p style={{ fontSize: '12px', marginBottom: '10px' }}>
+              API URL: {process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}
+            </p>
             <button 
               onClick={() => loadFeed(1)}
               className="retry-btn"
