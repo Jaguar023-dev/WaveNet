@@ -983,3 +983,332 @@
     width: 90vw;
   }
 }
+
+
+/* Add to client/src/pages/Profile/Profile.css */
+
+/* Verified Badge in Profile Header */
+.profile-name {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.verified-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #1877f2;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.verified-badge svg {
+  filter: drop-shadow(0 1px 1px rgba(0,0,0,0.2));
+}
+
+.verified-text {
+  margin-left: 4px;
+}
+
+/* Verified Status Section */
+.verified-status {
+  background: #e8f4fd;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 15px;
+  border-left: 4px solid #1877f2;
+}
+
+.verified-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.verified-info svg {
+  color: #1877f2;
+}
+
+.verified-label {
+  font-weight: 600;
+  color: #1877f2;
+}
+
+.verified-since {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 6px;
+}
+
+.verified-since svg {
+  color: #666;
+}
+
+.verification-type {
+  display: inline-block;
+  background: #e3f2fd;
+  color: #1976d2;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* Verification CTA for non-verified users */
+.verification-cta {
+  margin-bottom: 15px;
+}
+
+.btn-verify {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #1877f2;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-verify:hover {
+  background: #166fe5;
+}
+
+.verification-hint {
+  font-size: 13px;
+  color: #666;
+  margin-top: 6px;
+}
+
+/* Verification intro item */
+.verification-intro {
+  border-top: 1px solid #e4e6eb;
+  padding-top: 10px;
+  margin-top: 10px;
+}
+
+.verification-intro svg {
+  color: #1877f2;
+}
+
+/* Verification Card in Sidebar */
+.verification-card {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  border: 1px solid #e4e6eb;
+}
+
+.verification-card .card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.verification-card .card-header svg {
+  color: #1877f2;
+}
+
+.verification-card .card-header h3 {
+  margin: 0;
+  font-size: 18px;
+  color: #1c1e21;
+}
+
+.verification-details {
+  margin-bottom: 15px;
+}
+
+.verification-detail {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f0f2f5;
+}
+
+.verification-detail:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.verification-detail svg {
+  color: #1877f2;
+  margin-top: 2px;
+}
+
+.verification-detail strong {
+  display: block;
+  font-size: 14px;
+  color: #1c1e21;
+  margin-bottom: 2px;
+}
+
+.verification-detail p {
+  margin: 0;
+  font-size: 13px;
+  color: #65676b;
+}
+
+.verification-category {
+  text-transform: capitalize;
+  color: #1976d2;
+  font-weight: 500;
+}
+
+.learn-more-btn {
+  width: 100%;
+  padding: 10px;
+  background: #f0f2f5;
+  border: none;
+  border-radius: 6px;
+  color: #65676b;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.learn-more-btn:hover {
+  background: #e4e6eb;
+}
+
+/* Verification Pending Card */
+.verification-pending-card {
+  background: #fff8e1;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+  border: 1px solid #ffd54f;
+}
+
+.verification-pending-card .card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.verification-pending-card .card-header svg {
+  color: #ffb300;
+}
+
+.verification-status-info {
+  margin-bottom: 15px;
+}
+
+.status-indicator.pending {
+  display: inline-block;
+  background: #ffecb3;
+  color: #ff8f00;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 10px;
+}
+
+.verification-status-info p {
+  margin: 8px 0;
+  font-size: 14px;
+  color: #5d4037;
+}
+
+.submitted-date {
+  font-size: 13px !important;
+  color: #8d6e63 !important;
+  font-style: italic;
+}
+
+.view-request-btn {
+  width: 100%;
+  padding: 10px;
+  background: #ffb300;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.view-request-btn:hover {
+  background: #ffa000;
+}
+
+/* Post Author Header in Feed */
+.post-author-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.post-verified-badge {
+  color: #1877f2;
+  display: flex;
+  align-items: center;
+}
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+  .verified-badge {
+    padding: 3px 8px;
+    font-size: 12px;
+  }
+  
+  .verified-badge svg {
+    width: 14px;
+    height: 14px;
+  }
+  
+  .verified-status {
+    padding: 10px;
+  }
+  
+  .verification-card,
+  .verification-pending-card {
+    padding: 15px;
+  }
+  
+  .btn-verify {
+    padding: 6px 12px;
+    font-size: 14px;
+  }
+}
+
+/* Animation for new verified status */
+@keyframes pulse-verified {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.verified-badge {
+  animation: pulse-verified 0.5s ease-in-out;
+}
+
+/* Hover effects */
+.verified-badge:hover {
+  background: #166fe5;
+  box-shadow: 0 2px 8px rgba(24, 119, 242, 0.3);
+}
+
+.post-verified-badge:hover {
+  color: #166fe5;
+}
