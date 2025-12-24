@@ -3,7 +3,7 @@ import { useSelector } from 'react-redux';
 import { 
   Heart, MessageCircle, Share2, Bookmark, MoreHorizontal, 
   ThumbsUp, Smile, Frown, Heart as HeartIcon, AlertTriangle,
-  Globe, Users, Lock, Send
+  Globe, Users, Lock, Send, CheckCircle
 } from 'react-feather';
 import './Post.css';
 
@@ -57,6 +57,16 @@ const Post = ({ post }) => {
     }
   };
 
+  // NEW: Verified Badge Component
+  const VerifiedBadge = ({ size = 16, showTooltip = true }) => (
+    <span 
+      className="verified-badge"
+      title={showTooltip ? "Verified Account" : undefined}
+    >
+      <CheckCircle size={size} />
+    </span>
+  );
+
   return (
     <div className="post-container">
       {/* Post Header */}
@@ -68,7 +78,13 @@ const Post = ({ post }) => {
             className="post-avatar"
           />
           <div className="post-user-info">
-            <h4 className="post-username">{post.user?.username}</h4>
+            <div className="post-user-name-wrapper">
+              <h4 className="post-username">{post.user?.username}</h4>
+              {/* ADDED: Verified Badge */}
+              {post.user?.isVerified && (
+                <VerifiedBadge size={16} showTooltip={true} />
+              )}
+            </div>
             <div className="post-meta">
               <span className="post-time">{formatTime(post.createdAt)}</span>
               <span className="post-privacy">
@@ -169,7 +185,7 @@ const Post = ({ post }) => {
 
         {/* Reactions Popup */}
         {showReactions && (
-          <div className="reactions-popup" onMouseEnter={() => setShowReactions(true)} onMouseLeave={() => setShowReactions(false)}>
+          <div className="reactions-popup" onMouseEnter={() => setShowReactions(true)} onMouseLeave={() => setTimeout(() => setShowReactions(false), 500)}>
             {reactions.map(reaction => (
               <button
                 key={reaction.type}
@@ -230,7 +246,13 @@ const Post = ({ post }) => {
                   />
                   <div className="comment-content">
                     <div className="comment-header">
-                      <span className="comment-username">{comment.user?.username}</span>
+                      <div className="comment-user-wrapper">
+                        <span className="comment-username">{comment.user?.username}</span>
+                        {/* ADDED: Verified Badge in Comments */}
+                        {comment.user?.isVerified && (
+                          <VerifiedBadge size={14} showTooltip={false} />
+                        )}
+                      </div>
                       <span className="comment-time">{formatTime(comment.createdAt)}</span>
                     </div>
                     <p className="comment-text">{comment.content}</p>
