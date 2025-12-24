@@ -1,128 +1,153 @@
-// server/models/User.js - COMPLETE FIXED VERSION
+// server/models/User.js
 const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema({
-  username: { 
-    type: String, 
-    required: true, 
+  username: {
+    type: String,
+    required: true,
     unique: true,
-    trim: true,
-    minlength: 3,
-    maxlength: 30
+    trim: true
   },
-  email: { 
-    type: String, 
-    required: true, 
+  email: {
+    type: String,
+    required: true,
     unique: true,
-    trim: true,
     lowercase: true
   },
-  password: { 
-    type: String, 
-    required: true,
-    select: false // Don't return password by default
+  password: {
+    type: String,
+    required: true
   },
   profile: {
-    firstName: { type: String, default: '' },
-    lastName: { type: String, default: '' },
-    bio: { type: String, default: '' },
-    location: { type: String, default: '' },
-    website: { type: String, default: '' },
+    firstName: String,
+    lastName: String,
+    bio: String,
+    location: String,
+    website: String,
+    dateOfBirth: Date,
+    gender: String,
     profilePicture: {
-      url: { type: String, default: '' },
-      publicId: { type: String, default: '' }
+      url: String,
+      publicId: String
     },
     coverPhoto: {
-      url: { type: String, default: '' },
-      publicId: { type: String, default: '' }
-    }
+      url: String,
+      publicId: String
+    },
+    work: [{
+      company: String,
+      position: String,
+      startDate: Date,
+      endDate: Date,
+      currentlyWorking: Boolean
+    }],
+    education: [{
+      school: String,
+      degree: String,
+      field: String,
+      startYear: Number,
+      endYear: Number
+    }]
   },
-  role: { 
-    type: String, 
-    enum: ['user', 'admin', 'moderator'], 
-    default: 'user' 
+  
+  // ADD THESE NEW FIELDS
+  role: {
+    type: String,
+    enum: ['user', 'admin', 'super_admin'],
+    default: 'user'
   },
-  isActive: { type: Boolean, default: true },
-  lastActive: { type: Date, default: Date.now },
-  resetPasswordToken: String,
-  resetPasswordExpire: Date,
+  isVerified: {
+    type: Boolean,
+    default: false
+  },
+  verificationRequest: {
+    requestedAt: Date,
+    status: {
+      type: String,
+      enum: ['pending', 'approved', 'rejected', 'none'],
+      default: 'none'
+    },
+    documents: [{
+      type: { type: String }, // 'id_card', 'passport', 'business_doc'
+      url: String,
+      publicId: String
+    }],
+    message: String,
+    reviewedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    reviewedAt: Date
+  },
+  // END OF NEW FIELDS
+  
   friends: [{
-    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-    status: { 
-      type: String, 
-      enum: ['pending', 'accepted', 'blocked'],
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }],
+  friendRequests: [{
+    from: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    status: {
+      type: String,
+      enum: ['pending', 'accepted', 'rejected'],
       default: 'pending'
     },
-    date: { type: Date, default: Date.now }
+    sentAt: Date
   }],
-  followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
-  following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  blockedUsers: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }],
+  privacySettings: {
+    profileVisibility: {
+      type: String,
+      enum: ['public', 'friends', 'private'],
+      default: 'public'
+    },
+    postVisibility: {
+      type: String,
+      enum: ['public', 'friends', 'private'],
+      default: 'public'
+    },
+    showOnlineStatus: {
+      type: Boolean,
+      default: true
+    },
+    allowFriendRequests: {
+      type: Boolean,
+      default: true
+    },
+    allowMessages: {
+      type: String,
+      enum: ['everyone', 'friends', 'none'],
+      default: 'everyone'
+    }
+  },
   notifications: [{
-    type: { type: String, enum: ['friend_request', 'like', 'comment', 'message'] },
-    from: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-    message: String,
-    read: { type: Boolean, default: false },
-    createdAt: { type: Date, default: Date.now }
-  }]
-}, { 
-  timestamps: true,
-  toJSON: { virtuals: true },
-  toObject: { virtuals: true }
-});
-
-// Password comparison method
-userSchema.methods.comparePassword = async function(candidatePassword) {
-  return await bcrypt.compare(candidatePassword, this.password);
-};
-
-// Hash password before saving
-userSchema.pre('save', async function(next) {
-  // Only hash the password if it has been modified (or is new)
-  if (!this.isModified('password')) return next();
-  
-  try {
-    // Generate a salt
-    const salt = await bcrypt.genSalt(10);
-    
-    // Hash the password along with the new salt
-    this.password = await bcrypt.hash(this.password, salt);
-    next();
-  } catch (error) {
-    next(error);
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Notification'
+  }],
+  lastSeen: Date,
+  isOnline: Boolean,
+  createdAt: {
+    type: Date,
+    default: Date.now
+  },
+  updatedAt: {
+    type: Date,
+    default: Date.now
   }
+}, {
+  timestamps: true
 });
 
-// Update lastActive timestamp before save
+// Update timestamps on save
 userSchema.pre('save', function(next) {
-  if (this.isModified()) {
-    this.lastActive = new Date();
-  }
+  this.updatedAt = Date.now();
   next();
 });
 
-// Virtual for full name
-userSchema.virtual('profile.fullName').get(function() {
-  return `${this.profile.firstName} ${this.profile.lastName}`.trim();
-});
-
-// Virtual for friend count
-userSchema.virtual('friendCount').get(function() {
-  return this.friends.filter(friend => friend.status === 'accepted').length;
-});
-
-// Method to get public profile (without sensitive data)
-userSchema.methods.getPublicProfile = function() {
-  const userObject = this.toObject();
-  
-  // Remove sensitive data
-  delete userObject.password;
-  delete userObject.resetPasswordToken;
-  delete userObject.resetPasswordExpire;
-  
-  return userObject;
-};
-
-const User = mongoose.model('User', userSchema);
-
-module.exports = User;
+module.exports = mongoose.model('User', userSchema);
