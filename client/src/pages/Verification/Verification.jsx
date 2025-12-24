@@ -1,5 +1,5 @@
 // client/src/pages/Verification/Verification.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import api from '../../utils/api';
@@ -12,6 +12,7 @@ const Verification = () => {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState('requirements');
+  const [userData, setUserData] = useState(null);
   
   const [formData, setFormData] = useState({
     category: '',
@@ -22,6 +23,35 @@ const Verification = () => {
   });
   
   const [documentFile, setDocumentFile] = useState(null);
+
+  // Fetch user verification status on mount
+  useEffect(() => {
+    if (user) {
+      // Use existing user data from Redux, but ensure verification data is loaded
+      setUserData(user);
+      
+      // Optional: Fetch fresh verification status from API
+      fetchVerificationStatus();
+    }
+  }, [user]);
+
+  const fetchVerificationStatus = async () => {
+    try {
+      const response = await api.get('/api/verification/status');
+      if (response.data) {
+        // Update user data with verification info
+        setUserData(prev => ({
+          ...prev,
+          isVerified: response.data.isVerified,
+          verificationType: response.data.verificationType,
+          verificationRequest: response.data.verificationRequest,
+          verifiedSince: response.data.verifiedSince
+        }));
+      }
+    } catch (error) {
+      console.error('Error fetching verification status:', error);
+    }
+  };
 
   if (!user) {
     navigate('/login');
@@ -81,31 +111,45 @@ const Verification = () => {
       return;
     }
 
+    if (formData.justification.length < 200) {
+      toast.error('Justification must be at least 200 characters');
+      return;
+    }
+
     setIsSubmitting(true);
     
     try {
+      // Create FormData for file upload
+      const formDataToSend = new FormData();
+      formDataToSend.append('category', formData.category);
+      formDataToSend.append('justification', formData.justification);
+      formDataToSend.append('website', formData.website);
+      formDataToSend.append('followersCount', formData.followersCount);
+      
       // Upload document if provided
-      let documentUrl = '';
       if (documentFile) {
-        const formDataFile = new FormData();
-        formDataFile.append('document', documentFile);
-        
-        const uploadRes = await api.post('/upload/verification', formDataFile, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        });
-        documentUrl = uploadRes.data.url;
+        formDataToSend.append('document', documentFile);
       }
 
       // Submit verification request
-      const requestData = {
-        ...formData,
-        supportingDocuments: documentUrl ? [{ documentType: 'identity', url: documentUrl }] : []
-      };
-
-      await api.post('/verification/request', requestData);
+      const response = await api.post('/api/verification/request', formDataToSend, {
+        headers: { 
+          'Content-Type': 'multipart/form-data',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
       
-      toast.success('Verification request submitted successfully! Our team will review it within 7-10 business days.');
-      navigate('/profile/' + user._id);
+      if (response.data.success) {
+        toast.success('Verification request submitted successfully! Our team will review it within 7-10 business days.');
+        
+        // Refresh verification status
+        await fetchVerificationStatus();
+        
+        // Switch to requirements tab to show pending status
+        setActiveTab('requirements');
+      } else {
+        toast.error(response.data.message || 'Failed to submit verification request');
+      }
       
     } catch (error) {
       console.error('Verification request failed:', error);
@@ -122,6 +166,12 @@ const Verification = () => {
       [name]: value
     }));
   };
+
+  // Determine user's verification status
+  const isVerified = userData?.isVerified || false;
+  const verificationRequestStatus = userData?.verificationRequest?.status || 'not_requested';
+  const isPending = verificationRequestStatus === 'pending';
+  const isRejected = verificationRequestStatus === 'rejected';
 
   return (
     <div className="verification-container">
@@ -181,6 +231,37 @@ const Verification = () => {
                 <li>No violations of our Community Standards</li>
               </ul>
             </div>
+
+            {/* Show status if pending or verified */}
+            {isPending && (
+              <div className="status-notice pending">
+                <h3>⏳ Your Verification Request is Pending</h3>
+                <p>We're reviewing your application. You'll be notified when a decision is made.</p>
+                <p><strong>Submitted:</strong> {userData?.verificationRequest?.submittedAt ? 
+                  new Date(userData.verificationRequest.submittedAt).toLocaleDateString() : 'Recently'}</p>
+              </div>
+            )}
+
+            {isVerified && (
+              <div className="status-notice verified">
+                <h3>✅ You're Verified!</h3>
+                <p>Your account has the blue verification badge.</p>
+                <p><strong>Category:</strong> {userData?.verificationType || 'Public Figure'}</p>
+                {userData?.verifiedSince && (
+                  <p><strong>Verified since:</strong> {new Date(userData.verifiedSince).toLocaleDateString()}</p>
+                )}
+              </div>
+            )}
+
+            {isRejected && (
+              <div className="status-notice rejected">
+                <h3>❌ Verification Request Denied</h3>
+                <p>Your application was not approved. You can reapply after 90 days.</p>
+                {userData?.verificationRequest?.rejectionReason && (
+                  <p><strong>Reason:</strong> {userData.verificationRequest.rejectionReason}</p>
+                )}
+              </div>
+            )}
           </div>
         )}
 
@@ -247,33 +328,56 @@ const Verification = () => {
           <div className="form-section">
             <h2>Request Verification</h2>
             
-            {user.verification?.verificationRequest?.status === 'pending' && (
+            {/* Show status messages */}
+            {isPending && (
               <div className="pending-notice">
                 <h3>⏳ Verification Request Pending</h3>
                 <p>Your verification request is under review. We'll notify you once a decision has been made.</p>
-                <p><strong>Submitted:</strong> {new Date(user.verification.verificationRequest.submittedAt).toLocaleDateString()}</p>
+                <p><strong>Submitted:</strong> {userData?.verificationRequest?.submittedAt ? 
+                  new Date(userData.verificationRequest.submittedAt).toLocaleDateString() : 'Recently'}</p>
+                <button 
+                  className="back-to-requirements"
+                  onClick={() => setActiveTab('requirements')}
+                >
+                  View Requirements
+                </button>
               </div>
             )}
 
-            {user.verification?.verificationRequest?.status === 'approved' && (
+            {isVerified && (
               <div className="approved-notice">
                 <h3>🎉 Congratulations! You're Verified</h3>
                 <p>Your account has been verified. The blue badge will now appear next to your name.</p>
-                <p><strong>Verified since:</strong> {new Date(user.verification.verifiedSince).toLocaleDateString()}</p>
+                <p><strong>Verified since:</strong> {userData?.verifiedSince ? 
+                  new Date(userData.verifiedSince).toLocaleDateString() : 'Recently'}</p>
+                <button 
+                  className="back-to-requirements"
+                  onClick={() => setActiveTab('requirements')}
+                >
+                  View Your Status
+                </button>
               </div>
             )}
 
-            {user.verification?.verificationRequest?.status === 'rejected' && (
+            {isRejected && (
               <div className="rejected-notice">
                 <h3>❌ Verification Request Denied</h3>
                 <p>Your request for verification was not approved at this time.</p>
-                <p><strong>Reason:</strong> {user.verification.verificationRequest.rejectionReason}</p>
+                {userData?.verificationRequest?.rejectionReason && (
+                  <p><strong>Reason:</strong> {userData.verificationRequest.rejectionReason}</p>
+                )}
                 <p>You may reapply after 90 days.</p>
+                <button 
+                  className="back-to-requirements"
+                  onClick={() => setActiveTab('requirements')}
+                >
+                  View Requirements
+                </button>
               </div>
             )}
 
-            {user.verification?.verificationRequest?.status !== 'pending' && 
-             user.verification?.verificationRequest?.status !== 'approved' && (
+            {/* Only show form if not verified, not pending, and not recently rejected */}
+            {!isVerified && !isPending && !isRejected && (
               <form onSubmit={handleSubmit} className="verification-form">
                 <div className="form-group">
                   <label>Category *</label>
@@ -338,6 +442,9 @@ const Verification = () => {
                   />
                   <div className="char-count">
                     {formData.justification.length}/200 characters
+                    {formData.justification.length < 200 && (
+                      <span className="char-warning"> (need {200 - formData.justification.length} more)</span>
+                    )}
                   </div>
                 </div>
 
@@ -368,7 +475,7 @@ const Verification = () => {
                   <button 
                     type="submit" 
                     className="submit-btn"
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || formData.justification.length < 200}
                   >
                     {isSubmitting ? 'Submitting...' : 'Submit Verification Request'}
                   </button>
