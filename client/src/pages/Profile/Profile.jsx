@@ -46,7 +46,7 @@ const Profile = () => {
   const [showCoverPhotoMenu, setShowCoverPhotoMenu] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [posts, setPosts] = useState([]);
-  
+
   const profilePicInputRef = useRef(null);
   const coverPhotoInputRef = useRef(null);
 
@@ -54,7 +54,7 @@ const Profile = () => {
     // In a real app, fetch user profile by ID
     // For now, use current user
     setProfileUser(currentUser);
-    
+
     // Simulate fetching posts
     setPosts([
       { id: 1, content: "Just had an amazing day! 😊", likes: 24, comments: 5, shares: 2, time: "2 hours ago" },
@@ -71,7 +71,7 @@ const Profile = () => {
     try {
       // Simulate upload
       await new Promise(resolve => setTimeout(resolve, 1500));
-      
+
       const previewUrl = URL.createObjectURL(file);
       setProfileUser(prev => ({
         ...prev,
@@ -80,7 +80,7 @@ const Profile = () => {
           profilePicture: { url: previewUrl }
         }
       }));
-      
+
       console.log('Profile picture updated:', file.name);
       setShowProfilePicMenu(false);
     } catch (error) {
@@ -98,7 +98,7 @@ const Profile = () => {
     try {
       // Simulate upload
       await new Promise(resolve => setTimeout(resolve, 1500));
-      
+
       const previewUrl = URL.createObjectURL(file);
       setProfileUser(prev => ({
         ...prev,
@@ -107,7 +107,7 @@ const Profile = () => {
           coverPhoto: { url: previewUrl }
         }
       }));
-      
+
       console.log('Cover photo updated:', file.name);
       setShowCoverPhotoMenu(false);
     } catch (error) {
@@ -179,7 +179,7 @@ const Profile = () => {
             </button>
           )}
         </div>
-        
+
         {/* Cover Photo Upload Menu */}
         {showCoverPhotoMenu && (
           <div className="upload-menu cover-upload-menu">
@@ -223,7 +223,7 @@ const Profile = () => {
             )}
           </div>
         )}
-        
+
         <input
           ref={coverPhotoInputRef}
           type="file"
@@ -312,7 +312,7 @@ const Profile = () => {
             )}
           </div>
         )}
-        
+
         <input
           ref={profilePicInputRef}
           type="file"
@@ -332,7 +332,7 @@ const Profile = () => {
               </span>
             )}
           </h1>
-          
+
           {/* ADDED: Verified Status Section */}
           {profileUser.isVerified && (
             <div className="verified-status">
@@ -353,7 +353,7 @@ const Profile = () => {
               )}
             </div>
           )}
-          
+
           {/* ADDED: For users who are not verified but can request verification */}
           {!profileUser.isVerified && isOwnProfile && (
             <div className="verification-cta">
@@ -367,7 +367,7 @@ const Profile = () => {
               <p className="verification-hint">Get the blue verification badge</p>
             </div>
           )}
-          
+
           <p className="profile-bio">{profileUser.profile?.bio || 'No bio yet'}</p>
           <div className="profile-stats">
             <div className="stat">
@@ -399,7 +399,7 @@ const Profile = () => {
                 >
                   <MoreVertical size={18} />
                 </button>
-                
+
                 {/* Edit Menu Dropdown */}
                 {showEditMenu && (
                   <div className="edit-dropdown-menu">
@@ -464,7 +464,7 @@ const Profile = () => {
               ) : (
                 <p className="no-intro">No intro added yet</p>
               )}
-              
+
               {profileUser.profile?.work?.length > 0 && (
                 <div className="intro-item">
                   <Briefcase size={18} />
@@ -491,7 +491,7 @@ const Profile = () => {
                   </a>
                 </div>
               )}
-              
+
               {/* ADDED: Verification info in intro */}
               {profileUser.isVerified && (
                 <div className="intro-item verification-intro">
@@ -537,7 +537,7 @@ const Profile = () => {
                 )}
                 {profileUser.verificationType && (
                   <div className="verification-detail">
-                    <Award size={16} />
+                    <GraduationCap size={16} />
                     <div>
                       <strong>Category</strong>
                       <p className="verification-category">{profileUser.verificationType}</p>
@@ -550,196 +550,170 @@ const Profile = () => {
               </button>
             </div>
           )}
-          
-          {/* ADDED: Verification Request Status Card (for pending requests) */}
-          {!profileUser.isVerified && profileUser.verificationRequest?.status === 'pending' && (
-            <div className="verification-pending-card">
-              <div className="card-header">
-                <CheckCircle size={20} />
-                <h3>Verification Request</h3>
-              </div>
-              <div className="verification-status-info">
-                <div className="status-indicator pending">
-                  <span>⏳ Pending Review</span>
-                </div>
-                <p>Your verification request is under review. We'll notify you once a decision is made.</p>
-                <p className="submitted-date">
-                  Submitted: {new Date(profileUser.verificationRequest.submittedAt).toLocaleDateString()}
-                </p>
-              </div>
-              <button className="view-request-btn" onClick={() => navigate('/verification')}>
-                View Request Details
-              </div>
-              <button className="learn-more-btn" onClick={() => navigate('/verification')}>
-                Learn more about verification
-              </button>
-            </div>
-          )}
-          
-          {/* ADDED: Verification Request Status Card (for pending requests) */}
-          {!profileUser.isVerified && profileUser.verificationRequest?.status === 'pending' && (
-            <div className="verification-pending-card">
-              <div className="card-header">
-                <CheckCircle size={20} />
-                <h3>Verification Request</h3>
-              </div>
-              <div className="verification-status-info">
-                <div className="status-indicator pending">
-                  <span>⏳ Pending Review</span>
-                </div>
-                <p>Your verification request is under review. We'll notify you once a decision is made.</p>
-                <p className="submitted-date">
-                  Submitted: {new Date(profileUser.verificationRequest.submittedAt).toLocaleDateString()}
-                </p>
-              </div>
-           <button className="view-request-btn" onClick={() => navigate('/verification')}>
-  View Request Details
-</button> {/* Changed from </div> to </button> */}
-<button className="learn-more-btn" onClick={() => navigate('/verification')}>
-  Learn more about verification
-</button>
-            </div>
-          )}
 
-          {/* Photos Card */}
-          <div className="photos-card">
-            <div className="card-header">
-              <h3>Photos</h3>
-              <a href={`/photos/${profileUser._id}`}>See all</a>
-            </div>
-            <div className="photos-grid">
-              {[1, 2, 3, 4, 5, 6].map(i => (
-                <div key={i} className="photo-item">
-                  <div className="photo-placeholder">
-                    <ImageIcon size={24} />
+                        {/* ADDED: Verification Request Status Card (for pending requests) */}
+              {!profileUser.isVerified && profileUser.verificationRequest?.status === 'pending' && (
+                <div className="verification-pending-card">
+                  <div className="card-header">
+                    <CheckCircle size={20} />
+                    <h3>Verification Request</h3>
                   </div>
+                  <div className="verification-status-info">
+                    <div className="status-indicator pending">
+                      <span>⏳ Pending Review</span>
+                    </div>
+                    <p>Your verification request is under review. We'll notify you once a decision is made.</p>
+                    <p className="submitted-date">
+                      Submitted: {new Date(profileUser.verificationRequest.submittedAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <button className="view-request-btn" onClick={() => navigate('/verification')}>
+                    View Request Details
+                  </button>
+                  <button className="learn-more-btn" onClick={() => navigate('/verification')}>
+                    Learn more about verification
+                  </button>
                 </div>
-              ))}
-            </div>
-          </div>
+              )}
 
-          {/* Friends Card */}
-          <div className="friends-card">
-            <div className="card-header">
-              <h3>Friends</h3>
-              <a href={`/friends/${profileUser._id}`}>See all</a>
-            </div>
-            <div className="friends-grid">
-              {[1, 2, 3, 4, 5, 6].map(i => (
-                <div key={i} className="friend-item">
-                  <div className="friend-avatar"></div>
-                  <span className="friend-name">Friend {i}</span>
+              {/* Photos Card */}
+              <div className="photos-card">
+                <div className="card-header">
+                  <h3>Photos</h3>
+                  <a href={`/photos/${profileUser._id}`}>See all</a>
                 </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <div className="profile-main">
-          {/* Create Post */}
-          {isOwnProfile && (
-            <div className="create-post-card">
-              <img
-                src={currentUser.profile?.profilePicture?.url || '/default-avatar.png'}
-                alt={currentUser.username}
-                className="post-avatar"
-              />
-              <input
-                type="text"
-                placeholder="What's on your mind?"
-                className="post-input"
-              />
-              <div className="post-options">
-                <button className="post-option">
-                  <ImageIcon size={20} />
-                  <span>Photo/Video</span>
-                </button>
-                <button className="post-option">
-                  <Video size={20} />
-                  <span>Live Video</span>
-                </button>
-                <button className="post-option">
-                  <Flag size={20} />
-                  <span>Feeling/Activity</span>
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Posts Feed */}
-          <div className="posts-feed">
-            {posts.length > 0 ? (
-              posts.map(post => (
-                <div key={post.id} className="post-card">
-                  <div className="post-header">
-                    <img
-                      src={profileUser.profile?.profilePicture?.url || '/default-avatar.png'}
-                      alt={profileUser.username}
-                      className="post-author-avatar"
-                    />
-                    <div className="post-author-info">
-                      <div className="post-author-header">
-                        <h4>{profileUser.username}</h4>
-                        {profileUser.isVerified && (
-                          <span className="post-verified-badge" title="Verified Account">
-                            <CheckCircle size={14} />
-                          </span>
-                        )}
-                      </div>
-                      <div className="post-meta">
-                        <span>{post.time}</span>
-                        <span className="privacy-badge">
-                          <Globe size={12} />
-                          Public
-                        </span>
+                <div className="photos-grid">
+                  {[1, 2, 3, 4, 5, 6].map(i => (
+                    <div key={i} className="photo-item">
+                      <div className="photo-placeholder">
+                        <ImageIcon size={24} />
                       </div>
                     </div>
-                    <button className="post-more-btn">
-                      <MoreVertical size={20} />
+                  ))}
+                </div>
+              </div>
+
+              {/* Friends Card */}
+              <div className="friends-card">
+                <div className="card-header">
+                  <h3>Friends</h3>
+                  <a href={`/friends/${profileUser._id}`}>See all</a>
+                </div>
+                <div className="friends-grid">
+                  {[1, 2, 3, 4, 5, 6].map(i => (
+                    <div key={i} className="friend-item">
+                      <div className="friend-avatar"></div>
+                      <span className="friend-name">Friend {i}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="profile-main">
+              {/* Create Post */}
+              {isOwnProfile && (
+                <div className="create-post-card">
+                  <img
+                    src={currentUser.profile?.profilePicture?.url || '/default-avatar.png'}
+                    alt={currentUser.username}
+                    className="post-avatar"
+                  />
+                  <input
+                    type="text"
+                    placeholder="What's on your mind?"
+                    className="post-input"
+                  />
+                  <div className="post-options">
+                    <button className="post-option">
+                      <ImageIcon size={20} />
+                      <span>Photo/Video</span>
                     </button>
-                  </div>
-                  
-                  <div className="post-content">
-                    <p>{post.content}</p>
-                  </div>
-                  
-                  <div className="post-stats">
-                    <span>{post.likes} likes</span>
-                    <span>{post.comments} comments</span>
-                    <span>{post.shares} shares</span>
-                  </div>
-                  
-                  <div className="post-actions">
-                    <button className="post-action-btn">
-                      <Heart size={20} />
-                      <span>Like</span>
+                    <button className="post-option">
+                      <Video size={20} />
+                      <span>Live Video</span>
                     </button>
-                    <button className="post-action-btn">
-                      <MessageCircle size={20} />
-                      <span>Comment</span>
-                    </button>
-                    <button className="post-action-btn">
-                      <Share2 size={20} />
-                      <span>Share</span>
-                    </button>
-                    <button className="post-action-btn">
-                      <Bookmark size={20} />
-                      <span>Save</span>
+                    <button className="post-option">
+                      <Flag size={20} />
+                      <span>Feeling/Activity</span>
                     </button>
                   </div>
                 </div>
-              ))
-            ) : (
-              <div className="no-posts">
-                <p>No posts yet</p>
+              )}
+
+              {/* Posts Feed */}
+              <div className="posts-feed">
+                {posts.length > 0 ? (
+                  posts.map(post => (
+                    <div key={post.id} className="post-card">
+                      <div className="post-header">
+                        <img
+                          src={profileUser.profile?.profilePicture?.url || '/default-avatar.png'}
+                          alt={profileUser.username}
+                          className="post-author-avatar"
+                        />
+                        <div className="post-author-info">
+                          <div className="post-author-header">
+                            <h4>{profileUser.username}</h4>
+                            {profileUser.isVerified && (
+                              <span className="post-verified-badge" title="Verified Account">
+                                <CheckCircle size={14} />
+                              </span>
+                            )}
+                          </div>
+                          <div className="post-meta">
+                            <span>{post.time}</span>
+                            <span className="privacy-badge">
+                              <Globe size={12} />
+                              Public
+                            </span>
+                          </div>
+                        </div>
+                        <button className="post-more-btn">
+                          <MoreVertical size={20} />
+                        </button>
+                      </div>
+
+                      <div className="post-content">
+                        <p>{post.content}</p>
+                      </div>
+
+                      <div className="post-stats">
+                        <span>{post.likes} likes</span>
+                        <span>{post.comments} comments</span>
+                        <span>{post.shares} shares</span>
+                      </div>
+
+                      <div className="post-actions">
+                        <button className="post-action-btn">
+                          <Heart size={20} />
+                          <span>Like</span>
+                        </button>
+                        <button className="post-action-btn">
+                          <MessageCircle size={20} />
+                          <span>Comment</span>
+                        </button>
+                        <button className="post-action-btn">
+                          <Share2 size={20} />
+                          <span>Share</span>
+                        </button>
+                        <button className="post-action-btn">
+                          <Bookmark size={20} />
+                          <span>Save</span>
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="no-posts">
+                    <p>No posts yet</p>
+                  </div>
+                )}
               </div>
-            )}
+            </div>
           </div>
         </div>
-      </div>
-    </div>
-  );
-};
+      );
+    };
 
-export default Profile;
-              
+    export default Profile;
