@@ -1,40 +1,36 @@
 /* client/src/pages/Home/Home.css */
-
 .home-container {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  width: 100%;
+  padding: 16px;
+  max-width: 680px;
+  margin: 0 auto;
   position: relative;
-  padding-bottom: 20px;
 }
 
-/* Debug Info - Remove in production */
+/* Debug info - remove in production */
 .debug-info {
-  position: fixed;
-  top: 10px;
-  left: 10px;
-  background: rgba(0, 0, 0, 0.8);
-  color: white;
+  background: #f8f9fa;
   padding: 10px;
-  border-radius: 5px;
+  border-radius: 8px;
+  margin-bottom: 16px;
   font-size: 12px;
-  z-index: 9999;
-  max-width: 200px;
-  display: none; /* Hide by default, enable for debugging */
+  color: #6c757d;
+  border: 1px dashed #dee2e6;
 }
 
-.debug-info div {
-  margin: 3px 0;
+.debug-info strong {
+  color: #495057;
+  display: block;
+  margin-bottom: 4px;
 }
 
 /* Create Post Section */
 .create-post-section {
   background: white;
-  border-radius: 8px;
-  padding: 12px 16px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-  margin-bottom: 8px;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e4e6eb;
 }
 
 .user-profile-row {
@@ -43,29 +39,67 @@
   gap: 12px;
 }
 
+/* Profile Picture Container with Click Effect */
+.profile-pic-container {
+  position: relative;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+  width: 48px;
+  height: 48px;
+  overflow: hidden;
+}
+
+.profile-pic-container:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 0 3px rgba(24, 119, 242, 0.2);
+}
+
+.profile-pic-container:hover .profile-click-overlay {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 .profile-pic-small {
-  width: 40px;
-  height: 40px;
+  width: 100%;
+  height: 100%;
   border-radius: 50%;
   object-fit: cover;
   border: 2px solid #1877f2;
-  flex-shrink: 0;
+  display: block;
 }
 
+.profile-click-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(24, 119, 242, 0.9);
+  color: white;
+  text-align: center;
+  padding: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 0 0 24px 24px;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all 0.2s ease;
+  pointer-events: none;
+}
+
+/* Create Post Input */
 .whats-on-mind {
   flex: 1;
-  padding: 10px 16px;
   background: #f0f2f5;
   border: none;
-  border-radius: 20px;
-  font-size: 15px;
-  color: #65676b;
+  border-radius: 24px;
+  padding: 12px 16px;
   text-align: left;
+  color: #65676b;
+  font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.2s;
-  font-family: inherit;
-  outline: none;
-  min-height: 40px;
+  transition: background 0.2s ease;
 }
 
 .whats-on-mind:hover {
@@ -73,52 +107,32 @@
 }
 
 .photo-btn {
+  background: #f0f2f5;
+  border: none;
+  border-radius: 50%;
   width: 40px;
   height: 40px;
-  border-radius: 50%;
-  border: none;
-  background: #f0f2f5;
-  color: #45bd62;
-  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s;
-  flex-shrink: 0;
+  cursor: pointer;
+  color: #45bd62;
+  transition: background 0.2s ease;
 }
 
 .photo-btn:hover {
-  background: #e4e6eb;
-  transform: scale(1.05);
-}
-
-.photo-btn svg {
-  width: 20px;
-  height: 20px;
-  color: #45bd62;
+  background: #e4e6e9;
 }
 
 /* Stories Section */
 .stories-section {
-  background: white;
-  border-radius: 8px;
-  padding: 12px 16px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-  overflow-x: auto;
-  white-space: nowrap;
-  scrollbar-width: none;
-  margin-bottom: 8px;
+  margin-bottom: 16px;
 }
 
-.stories-section::-webkit-scrollbar {
-  display: none;
-}
-
-/* Stories Separator */
 .stories-separator {
   height: 1px;
   background: #e4e6eb;
-  margin: 8px 0;
+  margin: 16px 0;
 }
 
 /* Posts Feed */
@@ -126,48 +140,61 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+  max-height: calc(100vh - 200px);
+  overflow-y: auto;
+  padding-right: 4px;
 }
 
-/* Error Message */
+.posts-feed::-webkit-scrollbar {
+  width: 6px;
+}
+
+.posts-feed::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.posts-feed::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.posts-feed::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Loading States */
 .error-message {
-  background: white;
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
   border-radius: 8px;
-  padding: 30px 20px;
+  padding: 20px;
   text-align: center;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-}
-
-.error-message p {
-  color: #65676b;
-  margin-bottom: 20px;
-  font-size: 15px;
-  line-height: 1.5;
+  color: #856404;
 }
 
 .retry-btn {
-  padding: 10px 24px;
   background: #1877f2;
   color: white;
   border: none;
   border-radius: 6px;
-  font-size: 14px;
-  font-weight: 600;
+  padding: 8px 16px;
+  margin-top: 10px;
   cursor: pointer;
-  transition: background-color 0.2s;
-  font-family: inherit;
+  font-weight: 600;
+  transition: background 0.2s ease;
 }
 
 .retry-btn:hover {
   background: #166fe5;
 }
 
-/* Empty Feed */
 .empty-feed {
-  background: white;
-  border-radius: 8px;
-  padding: 40px 20px;
   text-align: center;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  padding: 40px 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .empty-illustration {
@@ -176,70 +203,53 @@
 
 .newspaper-icon {
   font-size: 64px;
-  color: #dadde1;
+  margin-bottom: 16px;
 }
 
 .empty-feed h3 {
-  font-size: 18px;
-  color: #050505;
-  margin-bottom: 12px;
-  font-weight: 600;
+  color: #1c1e21;
+  margin-bottom: 8px;
 }
 
 .empty-feed p {
   color: #65676b;
-  margin-bottom: 24px;
-  font-size: 15px;
-  line-height: 1.5;
+  margin-bottom: 20px;
 }
 
 .explore-btn {
-  padding: 10px 24px;
   background: #1877f2;
   color: white;
   border: none;
   border-radius: 6px;
-  font-size: 14px;
+  padding: 10px 24px;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s;
-  font-family: inherit;
+  transition: background 0.2s ease;
 }
 
 .explore-btn:hover {
   background: #166fe5;
 }
 
-/* Loading More */
 .loading-more {
   padding: 20px;
   text-align: center;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  color: #65676b;
 }
 
-/* End of Feed */
 .end-of-feed {
   text-align: center;
-  padding: 24px 20px;
+  padding: 20px;
   color: #65676b;
-  background: white;
+  background: #f8f9fa;
   border-radius: 8px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  margin-top: 16px;
 }
 
-.end-of-feed p:first-child {
-  font-size: 16px;
-  font-weight: 600;
-  margin-bottom: 8px;
-  color: #050505;
-}
-
-.end-of-feed p.text-sm {
-  font-size: 13px;
-  color: #65676b;
-  margin: 0;
+.text-sm {
+  font-size: 12px;
+  color: #8a8d91;
+  margin-top: 4px;
 }
 
 /* Modal Styles */
@@ -253,9 +263,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 10000;
-  padding: 20px;
-  animation: fadeIn 0.2s ease-out;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease;
 }
 
 @keyframes fadeIn {
@@ -264,134 +273,61 @@
 }
 
 .modal-container {
-  width: 100%;
+  background: white;
+  border-radius: 12px;
+  width: 90%;
   max-width: 500px;
   max-height: 90vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  overflow: auto;
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .modal-loading {
-  background: white;
   padding: 40px;
-  border-radius: 12px;
   text-align: center;
   color: #65676b;
-  font-size: 14px;
 }
 
-/* Text utility classes */
-.text-sm {
-  font-size: 13px !important;
-}
-
-/* Responsive */
+/* Responsive Design */
 @media (max-width: 768px) {
   .home-container {
-    gap: 12px;
+    padding: 12px;
   }
   
   .create-post-section {
     padding: 12px;
-    margin-bottom: 6px;
   }
   
-  .profile-pic-small {
-    width: 36px;
-    height: 36px;
+  .profile-pic-container {
+    width: 42px;
+    height: 42px;
   }
   
-  .whats-on-mind {
-    font-size: 14px;
-    padding: 8px 12px;
-    min-height: 36px;
-  }
-  
-  .photo-btn {
-    width: 36px;
-    height: 36px;
-  }
-  
-  .photo-btn svg {
-    width: 18px;
-    height: 18px;
-  }
-  
-  .stories-section {
-    padding: 12px;
-    margin-bottom: 6px;
-  }
-  
-  .error-message,
-  .empty-feed,
-  .loading-more,
-  .end-of-feed {
-    padding: 20px 16px;
-  }
-  
-  .modal-overlay {
-    padding: 0;
-    background: rgba(0, 0, 0, 0.8);
-    align-items: flex-start;
-    padding-top: 20px;
-  }
-  
-  .modal-container {
-    max-width: 100%;
-    max-height: calc(100vh - 40px);
-  }
-  
-  .newspaper-icon {
-    font-size: 48px;
+  .profile-click-overlay {
+    font-size: 10px;
+    padding: 3px;
   }
 }
 
 @media (max-width: 480px) {
-  .home-container {
-    gap: 10px;
-  }
-  
-  .create-post-section {
-    padding: 10px;
-  }
-  
-  .profile-pic-small {
-    width: 32px;
-    height: 32px;
-  }
-  
   .whats-on-mind {
     font-size: 13px;
-    padding: 6px 10px;
-    min-height: 32px;
+    padding: 10px 14px;
   }
   
-  .photo-btn {
-    width: 32px;
-    height: 32px;
-  }
-  
-  .photo-btn svg {
-    width: 16px;
-    height: 16px;
-  }
-  
-  .stories-section {
-    padding: 10px;
-  }
-  
-  .empty-feed h3 {
-    font-size: 16px;
-  }
-  
-  .empty-feed p {
-    font-size: 14px;
-  }
-  
-  .explore-btn,
-  .retry-btn {
-    padding: 8px 20px;
-    font-size: 13px;
+  .profile-pic-container {
+    width: 38px;
+    height: 38px;
   }
 }
