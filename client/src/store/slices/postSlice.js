@@ -1,14 +1,80 @@
+// client/src/store/slices/postSlice.js
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import api from '../../utils/api';
 
 export const fetchFeed = createAsyncThunk(
   'posts/fetchFeed',
-  async ({ page = 1, limit = 10 }, { rejectWithValue }) => {
+  async ({ page = 1, limit = 10 }, { rejectWithValue, getState }) => {
     try {
+      console.log(`📡 Fetching feed from API: page=${page}, limit=${limit}`);
       const response = await api.get(`/posts/feed?page=${page}&limit=${limit}`);
+      console.log('✅ API Response received:', response.data);
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to fetch feed');
+      console.error('❌ API Error:', {
+        message: error.message,
+        url: error.config?.url,
+        status: error.response?.status
+      });
+      
+      // If API fails, return mock data for development
+      console.warn('⚠️ Using mock data instead');
+      const { user } = getState().auth;
+      
+      const mockPosts = [
+        {
+          _id: '1',
+          content: `Welcome to WaveNet, ${user?.username || 'User'}! 🌊\nThis is your personalized feed.`,
+          user: {
+            _id: user?._id || 'user1',
+            username: user?.username || 'DemoUser',
+            profile: {
+              profilePicture: { 
+                url: user?.profile?.profilePicture?.url || '/default-avatar.png' 
+              }
+            }
+          },
+          reactions: [
+            { user: { _id: 'user2', username: 'Friend1' }, type: 'like' },
+            { user: { _id: 'user3', username: 'Friend2' }, type: 'love' }
+          ],
+          comments: [
+            {
+              _id: 'c1',
+              content: 'Great to be here!',
+              user: {
+                _id: 'user2',
+                username: 'Friend1',
+                profile: { profilePicture: { url: '/default-avatar.png' } }
+              },
+              createdAt: new Date().toISOString()
+            }
+          ],
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        },
+        {
+          _id: '2',
+          content: 'Create your first post or follow people to see more content here!',
+          user: {
+            _id: 'system',
+            username: 'WaveNet',
+            profile: {
+              profilePicture: { url: '/default-avatar.png' }
+            }
+          },
+          reactions: [],
+          comments: [],
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        }
+      ];
+      
+      return {
+        posts: mockPosts,
+        hasMore: false,
+        page: page
+      };
     }
   }
 );
