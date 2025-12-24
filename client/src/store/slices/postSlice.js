@@ -6,19 +6,10 @@ export const fetchFeed = createAsyncThunk(
   'posts/fetchFeed',
   async ({ page = 1, limit = 10 }, { rejectWithValue, getState }) => {
     try {
-      console.log(`📡 Fetching feed from API: page=${page}, limit=${limit}`);
       const response = await api.get(`/posts/feed?page=${page}&limit=${limit}`);
-      console.log('✅ API Response received:', response.data);
       return response.data;
     } catch (error) {
-      console.error('❌ API Error:', {
-        message: error.message,
-        url: error.config?.url,
-        status: error.response?.status
-      });
-      
       // If API fails, return mock data for development
-      console.warn('⚠️ Using mock data instead');
       const { user } = getState().auth;
       
       const mockPosts = [
