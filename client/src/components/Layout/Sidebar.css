@@ -364,3 +364,204 @@
     font-size: 14px;
   }
 }
+
+/* Add to client/src/components/Layout/Sidebar.css */
+
+/* Verified badge next to username in sidebar */
+.sidebar-verified-badge {
+  display: inline-flex;
+  align-items: center;
+  color: #1877f2;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.sidebar-verified-badge svg {
+  filter: drop-shadow(0 1px 1px rgba(0,0,0,0.1));
+}
+
+/* Verification menu item */
+.verification-item {
+  position: relative;
+  color: #1877f2 !important;
+  background: #f0f8ff !important;
+  border-left: 3px solid #1877f2 !important;
+}
+
+.verification-item:hover {
+  background: #e6f2ff !important;
+}
+
+.verification-badge {
+  background: #1877f2;
+  color: white;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-weight: bold;
+  margin-left: auto;
+}
+
+/* Verified account menu item */
+.verified-item {
+  color: #42b72a !important;
+  background: #f0fff4 !important;
+  border-left: 3px solid #42b72a !important;
+  cursor: default;
+}
+
+.verified-item:hover {
+  background: #f0fff4 !important;
+}
+
+.verified-badge-menu {
+  color: #42b72a;
+  font-weight: bold;
+  font-size: 14px;
+  margin-left: auto;
+}
+
+/* Verification shortcut */
+.verification-shortcut {
+  position: relative;
+  background: #f8fdff !important;
+  border-left: 2px solid #1877f2 !important;
+}
+
+.verification-shortcut .shortcut-icon {
+  background: linear-gradient(135deg, #1877f2, #42b72a) !important;
+  color: white !important;
+}
+
+.verification-shortcut:hover {
+  background: #eef7ff !important;
+}
+
+.shortcut-badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  background: #ff4444;
+  color: white;
+  font-size: 9px;
+  padding: 1px 4px;
+  border-radius: 8px;
+  font-weight: bold;
+}
+
+/* Verification help link */
+.verification-help {
+  color: #1877f2 !important;
+  font-weight: 500;
+}
+
+.verification-help svg {
+  color: #1877f2;
+}
+
+.verification-help:hover {
+  background: #f0f8ff !important;
+}
+
+/* User card with verified badge */
+.user-name {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Hover effects */
+.verification-item .menu-icon,
+.verification-help svg,
+.verification-shortcut .shortcut-icon {
+  transition: transform 0.2s ease;
+}
+
+.verification-item:hover .menu-icon,
+.verification-help:hover svg {
+  transform: scale(1.1);
+}
+
+/* Animation for verification badge */
+@keyframes pulse-verification {
+  0% { opacity: 1; }
+  50% { opacity: 0.7; }
+  100% { opacity: 1; }
+}
+
+.verification-badge,
+.shortcut-badge {
+  animation: pulse-verification 2s infinite;
+}
+
+/* For verified users - subtle shine effect */
+.verified-item .menu-icon {
+  color: #42b72a;
+  position: relative;
+}
+
+.verified-item .menu-icon::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, transparent, rgba(255,255,255,0.3), transparent);
+  animation: shine 3s infinite;
+}
+
+@keyframes shine {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+  .verification-badge,
+  .shortcut-badge {
+    font-size: 8px;
+    padding: 1px 3px;
+  }
+  
+  .sidebar-verified-badge svg {
+    width: 12px;
+    height: 12px;
+  }
+}
+
+@media (max-width: 768px) {
+  .verification-item .menu-label,
+  .verified-item .menu-label {
+    font-size: 13px;
+  }
+  
+  .verification-help span {
+    font-size: 13px;
+  }
+}
+
+/* Dark theme support (if you have dark mode) */
+@media (prefers-color-scheme: dark) {
+  .verification-item {
+    background: #1a3a5f !important;
+    color: #64b5f6 !important;
+  }
+  
+  .verification-item:hover {
+    background: #1e4a7a !important;
+  }
+  
+  .verified-item {
+    background: #1a3d1a !important;
+    color: #81c784 !important;
+  }
+  
+  .verification-shortcut {
+    background: #1a3a5f !important;
+  }
+  
+  .verification-shortcut:hover {
+    background: #1e4a7a !important;
+  }
+}
