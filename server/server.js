@@ -1,3 +1,4 @@
+// server/server.js
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -117,15 +118,92 @@ app.use('/api', limiter);
 
 // Database connection
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/wavenet';
+
+// Function to create admin user (NON-BLOCKING)
+const createAdminUser = async () => {
+  try {
+    const User = require('./models/User');
+    const bcrypt = require('bcryptjs');
+    
+    console.log('🔐 Checking for admin user...');
+    
+    // Check if admin already exists
+    const existingAdmin = await User.findOne({ 
+      $or: [
+        { email: 'admin@wavenet.com' },
+        { username: 'WaveNet Support' }
+      ] 
+    });
+
+    if (existingAdmin) {
+      // Update existing admin to ensure correct role
+      existingAdmin.role = 'super_admin';
+      existingAdmin.isVerified = true;
+      await existingAdmin.save();
+      console.log('✅ Admin user already exists and updated');
+      return;
+    }
+
+    // Create new admin user
+    const hashedPassword = await bcrypt.hash('WaveNet@support1411', 10);
+    
+    const adminUser = new User({
+      username: 'WaveNet Support',
+      email: 'admin@wavenet.com',
+      password: hashedPassword,
+      role: 'super_admin',
+      isVerified: true,
+      profile: {
+        firstName: 'WaveNet',
+        lastName: 'Support',
+        bio: 'Official WaveNet Administrator',
+        location: 'Global',
+        website: 'https://wavenet.com',
+        profilePicture: {
+          url: '/default-avatar.png'
+        }
+      },
+      privacySettings: {
+        profileVisibility: 'private',
+        postVisibility: 'private',
+        showOnlineStatus: false,
+        allowFriendRequests: false,
+        allowMessages: 'friends'
+      }
+    });
+
+    await adminUser.save();
+    console.log('🎉 Admin user created successfully!');
+    console.log('   👤 Username: WaveNet Support');
+    console.log('   📧 Email: admin@wavenet.com');
+    console.log('   🔑 Password: WaveNet@support1411');
+    console.log('   👑 Role: super_admin');
+    console.log('   ✅ Verified: true');
+    
+  } catch (error) {
+    console.error('❌ Error creating admin user:', error.message);
+    // Don't throw - just log and continue
+  }
+};
+
+// Connect to database with proper error handling
 mongoose.connect(MONGODB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
   serverSelectionTimeoutMS: 5000,
   socketTimeoutMS: 45000,
 })
-.then(() => {
+.then(async () => {
   console.log('✅ Connected to MongoDB');
   console.log(`📊 Database: ${MONGODB_URI.split('@').pop() || MONGODB_URI}`);
+  
+  // Try to create admin user, but don't block if it fails
+  try {
+    await createAdminUser();
+  } catch (adminError) {
+    console.error('⚠️  Admin creation failed (non-critical):', adminError.message);
+    // Continue anyway - server should still work
+  }
 })
 .catch(err => {
   console.error('❌ MongoDB connection error:', err.message);
@@ -179,6 +257,33 @@ app.get('/health', (req, res) => {
   res.status(200).json(healthData);
 });
 
+// Admin check endpoint
+app.get('/api/admin/check', async (req, res) => {
+  try {
+    const User = require('./models/User');
+    const admin = await User.findOne({ 
+      $or: [
+        { email: 'admin@wavenet.com' },
+        { username: 'WaveNet Support' }
+      ] 
+    });
+    
+    if (admin) {
+      res.json({
+        exists: true,
+        username: admin.username,
+        email: admin.email,
+        role: admin.role,
+        isVerified: admin.isVerified
+      });
+    } else {
+      res.json({ exists: false });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Serve React app in production
 if (isProduction) {
   const clientBuildPath = path.join(__dirname, '../client/dist');
@@ -219,7 +324,8 @@ if (isProduction) {
         endpoints: {
           api: '/api',
           health: '/health',
-          socket: '/socket.io'
+          socket: '/socket.io',
+          adminCheck: '/api/admin/check'
         },
         environment: {
           node_env: process.env.NODE_ENV,
@@ -236,6 +342,12 @@ if (isProduction) {
       mode: 'development',
       client: `React app should be running on ${CLIENT_URL}`,
       instructions: 'Run the React dev server separately with: npm run dev',
+      admin: {
+        username: 'WaveNet Support',
+        email: 'admin@wavenet.com',
+        password: 'WaveNet@support1411',
+        check: 'GET /api/admin/check'
+      },
       api: {
         base: 'http://localhost:' + (process.env.PORT || 5000) + '/api',
         auth: '/api/auth',
@@ -289,7 +401,8 @@ app.use('/api/*', (req, res) => {
       users: 'GET /api/users',
       posts: 'GET /api/posts',
       messages: 'GET /api/messages',
-      health: 'GET /health'
+      health: 'GET /health',
+      adminCheck: 'GET /api/admin/check'
     }
   });
 });
