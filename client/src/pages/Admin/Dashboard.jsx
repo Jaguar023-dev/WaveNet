@@ -5,8 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import AdminSidebar from '../../components/Admin/AdminSidebar';
 import AdminHeader from '../../components/Admin/AdminHeader';
 import DashboardStats from '../../components/Admin/DashboardStats';
-import './Admin/Dashboard.css';
-
+import './Dashboard.css';
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const { user } = useSelector(state => state.auth);
