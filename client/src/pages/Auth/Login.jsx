@@ -1,4 +1,4 @@
-// client/src/pages/Auth/Login.jsx - FIXED (No Redux)
+// client/src/pages/Auth/Login.jsx
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
@@ -21,7 +21,6 @@ const Login = () => {
   
   const from = location.state?.from?.pathname || '/home';
 
-  // Debug logging
   useEffect(() => {
     console.log('🔑 Login Component State:', {
       from,
@@ -111,12 +110,19 @@ const Login = () => {
     try {
       console.log('📡 Sending login request to API...');
       
-      // API URL - adjust based on your environment
-      const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      // FIXED: Changed from localhost to your Render URL
+      const API_URL = 'https://wavenet-wlnf.onrender.com/api';
+      
+      console.log(`🔗 Connecting to: ${API_URL}/auth/login`);
       
       const response = await axios.post(`${API_URL}/auth/login`, {
         email: formData.email,
         password: formData.password
+      }, {
+        timeout: 15000, // Increased timeout for Render cold starts
+        headers: {
+          'Content-Type': 'application/json'
+        }
       });
       
       console.log('✅ Login successful! Response:', response.data);
@@ -128,9 +134,9 @@ const Login = () => {
       // Show success message
       toast.success('Login successful!');
       
-      // Redirect to the intended page
-      console.log('🔄 Redirecting to:', from);
-      navigate(from, { replace: true });
+      // Redirect to home
+      console.log('🔄 Redirecting to home...');
+      navigate('/home', { replace: true });
       
     } catch (error) {
       console.error('❌ Login failed:', error);
@@ -140,16 +146,37 @@ const Login = () => {
       if (error.response) {
         // Server responded with error
         console.log('Server error response:', error.response.data);
-        errorMessage = error.response.data.message || 'Invalid email or password';
+        console.log('Status code:', error.response.status);
+        
+        if (error.response.status === 400) {
+          errorMessage = 'Invalid email or password';
+        } else if (error.response.status === 500) {
+          errorMessage = 'Server error. Please try again later.';
+        } else {
+          errorMessage = error.response.data.message || 'Invalid email or password';
+        }
       } else if (error.request) {
         // Request was made but no response
-        console.log('No response from server:', error.request);
-        errorMessage = 'Cannot connect to server. Please check your internet connection.';
+        console.log('No response from server. Request:', error.request);
+        
+        if (error.code === 'ECONNREFUSED') {
+          errorMessage = 'Cannot connect to server. The server might be starting up (Render.com cold start can take 30-60 seconds).';
+        } else if (error.code === 'ETIMEDOUT') {
+          errorMessage = 'Request timed out. Server might be slow to respond.';
+        } else if (error.message.includes('Network Error')) {
+          errorMessage = 'Network error. Please check your internet connection.';
+        } else {
+          errorMessage = 'No response from server. Please try again.';
+        }
+      } else {
+        // Something else happened
+        console.log('Error setting up request:', error.message);
+        errorMessage = error.message;
       }
       
       toast.error(errorMessage);
       
-      // Show error in form
+      // Show specific field errors if available
       if (error.response?.data?.field) {
         setErrors({ [error.response.data.field]: errorMessage });
       }
@@ -160,7 +187,7 @@ const Login = () => {
 
   const handleSocialLogin = (provider) => {
     console.log('🌐 Social login clicked:', provider);
-    window.location.href = `${process.env.REACT_APP_API_URL || ''}/auth/${provider}`;
+    window.location.href = `https://wavenet-wlnf.onrender.com/auth/${provider}`;
   };
 
   const handleForgotPassword = () => {
@@ -191,11 +218,15 @@ const Login = () => {
             borderLeft: '4px solid #1877f2'
           }}>
             <strong>Debug Info:</strong>
+            <div>Server: https://wavenet-wlnf.onrender.com</div>
             <div>Token in localStorage: {localStorage.getItem('token') ? '✅ Present' : '❌ Missing'}</div>
             <div>User in localStorage: {localStorage.getItem('user') ? '✅ Present' : '❌ Missing'}</div>
             <div>Target page: {from}</div>
             <div style={{ marginTop: '5px', color: '#666' }}>
               Test: admin@wavenet.com / WaveNet@support1411
+            </div>
+            <div style={{ marginTop: '5px', color: '#e74c3c', fontSize: '11px' }}>
+              Note: First request to Render.com might be slow (cold start)
             </div>
           </div>
         )}
