@@ -2,7 +2,7 @@
 import React, { useEffect } from 'react';
 import { Navigate, useLocation, Outlet } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import { getCurrentUser, setInitialized } from '../../store/slices/authSlice';
+import { getCurrentUser } from '../../store/slices/authSlice'; // Remove setInitialized
 import LoadingSpinner from '../Common/LoadingSpinner';
 
 const ProtectedRoute = () => {
@@ -12,8 +12,7 @@ const ProtectedRoute = () => {
     user, 
     token, 
     loading, 
-    isAuthenticated, 
-    initialized,
+    isAuthenticated,
     error 
   } = useSelector(state => state.auth);
   
@@ -25,20 +24,13 @@ const ProtectedRoute = () => {
       user: user ? `Yes (${user.username})` : 'No',
       isAuthenticated,
       loading,
-      initialized,
       error
     });
-  }, [token, user, isAuthenticated, loading, location, initialized, error]);
+  }, [token, user, isAuthenticated, loading, location, error]);
 
   // Check authentication on mount
   useEffect(() => {
     const checkAuth = async () => {
-      // Skip if already initialized
-      if (initialized) {
-        console.log('✅ Auth already initialized');
-        return;
-      }
-      
       console.log('🔄 ProtectedRoute: Checking authentication...');
       
       // Check if we have a token
@@ -55,17 +47,14 @@ const ProtectedRoute = () => {
       } else if (!hasToken) {
         console.log('❌ No token available');
       }
-      
-      // Mark as initialized even if no token
-      dispatch(setInitialized());
     };
     
     checkAuth();
-  }, [dispatch, token, user, initialized]);
+  }, [dispatch, token, user]);
 
   // Show loading while checking auth
-  if (loading || !initialized) {
-    console.log('⏳ ProtectedRoute: Loading or checking auth...');
+  if (loading) {
+    console.log('⏳ ProtectedRoute: Loading auth...');
     return <LoadingSpinner fullScreen />;
   }
 
@@ -116,6 +105,15 @@ const ProtectedRoute = () => {
         </button>
       </div>
     );
+  }
+
+  // Check admin routes
+  if (location.pathname.startsWith('/admin')) {
+    if (user?.role !== 'admin' && user?.role !== 'super_admin') {
+      console.log('🚫 ProtectedRoute: Not an admin, redirecting home');
+      return <Navigate to="/" replace />;
+    }
+    console.log('✅ ProtectedRoute: Admin access granted');
   }
 
   // Success - user is authenticated
