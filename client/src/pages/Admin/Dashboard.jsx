@@ -1,162 +1,239 @@
-// client/src/pages/Admin/Dashboard.jsx
+// client/src/pages/Admin/Dashboard.jsx - Add verification section
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import api from '../../utils/api';
+import './Dashboard.css';
+import { 
+  Users, FileText, CheckCircle, XCircle, Clock, 
+  BarChart, Shield, MessageSquare, TrendingUp 
+} from 'react-feather';
 import AdminSidebar from '../../components/Admin/AdminSidebar';
 import AdminHeader from '../../components/Admin/AdminHeader';
-import DashboardStats from '../../components/Admin/DashboardStats';
-import './Dashboard.css';
-const AdminDashboard = () => {
-  const [activeTab, setActiveTab] = useState('dashboard');
-  const { user } = useSelector(state => state.auth);
-  const navigate = useNavigate();
 
-  // Redirect if not admin
+const Dashboard = () => {
+  const { user } = useSelector(state => state.auth);
+  const [stats, setStats] = useState(null);
+  const [recentVerifications, setRecentVerifications] = useState([]);
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
-    if (!user) {
-      navigate('/login');
+    if (user?.role !== 'admin' && user?.role !== 'super_admin') {
+      window.location.href = '/';
       return;
     }
+    fetchDashboardData();
+  }, [user]);
 
-    if (user.role !== 'admin' && user.role !== 'super_admin') {
-      navigate('/');
-    }
-  }, [user, navigate]);
-
-  if (!user || (user.role !== 'admin' && user.role !== 'super_admin')) {
-    return (
-      <div className="admin-access-denied">
-        <div className="access-denied-content">
-          <div className="access-denied-icon">🚫</div>
-          <h2>Access Denied</h2>
-          <p>You need administrator privileges to access this page.</p>
-          <button 
-            className="back-to-home"
-            onClick={() => navigate('/')}
-          >
-            Back to Home
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  const renderContent = () => {
-    switch (activeTab) {
-      case 'dashboard':
-        return (
-          <>
-            <DashboardStats />
-            
-            <div className="admin-main-content">
-              {/* Recent Activity */}
-              <div className="activity-card">
-                <h3>Recent Activity</h3>
-                <div className="activity-list">
-                  {[
-                    { user: 'John Doe', action: 'requested verification', time: '5 min ago' },
-                    { user: 'Jane Smith', action: 'posted a new video', time: '15 min ago' },
-                    { user: 'Mike Johnson', action: 'reported a post', time: '1 hour ago' },
-                    { user: 'Sarah Wilson', action: 'joined WaveNet', time: '2 hours ago' },
-                    { user: 'Alex Brown', action: 'updated profile', time: '3 hours ago' },
-                  ].map((activity, index) => (
-                    <div key={index} className="activity-item">
-                      <div className="activity-avatar">
-                        {activity.user.charAt(0)}
-                      </div>
-                      <div className="activity-details">
-                        <p>
-                          <strong>{activity.user}</strong> {activity.action}
-                        </p>
-                        <span className="activity-time">{activity.time}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Quick Actions */}
-              <div className="quick-actions-card">
-                <h3>Quick Actions</h3>
-                <div className="actions-grid">
-                  <button className="action-btn">
-                    <div className="action-icon">👤</div>
-                    <span>Add New User</span>
-                  </button>
-                  <button className="action-btn">
-                    <div className="action-icon">✅</div>
-                    <span>Review Verification</span>
-                  </button>
-                  <button className="action-btn">
-                    <div className="action-icon">📊</div>
-                    <span>View Analytics</span>
-                  </button>
-                  <button className="action-btn">
-                    <div className="action-icon">⚙️</div>
-                    <span>System Settings</span>
-                  </button>
-                  <button className="action-btn">
-                    <div className="action-icon">📝</div>
-                    <span>Create Announcement</span>
-                  </button>
-                  <button className="action-btn">
-                    <div className="action-icon">🔒</div>
-                    <span>Security Check</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </>
-        );
-      case 'users':
-        return <div className="tab-content">Users Management - Coming Soon</div>;
-      case 'posts':
-        return <div className="tab-content">Posts Management - Coming Soon</div>;
-      case 'verification':
-        return <div className="tab-content">Verification Requests - Coming Soon</div>;
-      case 'reports':
-        return <div className="tab-content">Reports Management - Coming Soon</div>;
-      case 'messages':
-        return <div className="tab-content">Admin Messages - Coming Soon</div>;
-      case 'notifications':
-        return <div className="tab-content">Notifications - Coming Soon</div>;
-      case 'analytics':
-        return <div className="tab-content">Analytics - Coming Soon</div>;
-      case 'security':
-        return <div className="tab-content">Security - Coming Soon</div>;
-      case 'settings':
-        return <div className="tab-content">Settings - Coming Soon</div>;
-      default:
-        return <div className="tab-content">Select a tab</div>;
+  const fetchDashboardData = async () => {
+    try {
+      const [statsRes, verificationsRes] = await Promise.all([
+        api.get('/admin/stats'),
+        api.get('/verification/requests/pending?limit=5')
+      ]);
+      
+      setStats(statsRes.data);
+      setRecentVerifications(verificationsRes.data);
+    } catch (error) {
+      console.error('Failed to fetch dashboard data:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
+  if (loading) {
+    return <div className="loading">Loading admin dashboard...</div>;
+  }
+
   return (
     <div className="admin-dashboard">
-      <AdminSidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+      <AdminHeader />
+      
       <div className="admin-content">
-        <AdminHeader />
-        <div className="admin-content-wrapper">
-          <div className="admin-welcome">
-            <h1>Welcome back, {user.username}!</h1>
-            <p>Here's what's happening with your platform today.</p>
-            <div className="admin-badges">
-              <span className="admin-badge">
-                👑 Super Admin
-              </span>
-              <span className="verified-badge">
-                ✅ Verified
-              </span>
-              <span className="online-badge">
-                ● Online
-              </span>
+        <AdminSidebar />
+        
+        <main className="dashboard-main">
+          <div className="dashboard-header">
+            <h1>Admin Dashboard</h1>
+            <p>Welcome back, {user?.username}! Here's what's happening with your community.</p>
+          </div>
+
+          {/* Stats Grid */}
+          <div className="dashboard-stats">
+            <div className="stat-card">
+              <div className="stat-icon">
+                <Users size={24} />
+              </div>
+              <div className="stat-info">
+                <h3>{stats?.totalUsers?.toLocaleString() || '0'}</h3>
+                <p>Total Users</p>
+              </div>
+            </div>
+            
+            <div className="stat-card">
+              <div className="stat-icon">
+                <FileText size={24} />
+              </div>
+              <div className="stat-info">
+                <h3>{stats?.totalPosts?.toLocaleString() || '0'}</h3>
+                <p>Total Posts</p>
+              </div>
+            </div>
+            
+            <div className="stat-card">
+              <div className="stat-icon">
+                <MessageSquare size={24} />
+              </div>
+              <div className="stat-info">
+                <h3>{stats?.totalMessages?.toLocaleString() || '0'}</h3>
+                <p>Messages Today</p>
+              </div>
+            </div>
+            
+            <div className="stat-card">
+              <div className="stat-icon">
+                <CheckCircle size={24} />
+              </div>
+              <div className="stat-info">
+                <h3>{stats?.verifiedUsers?.toLocaleString() || '0'}</h3>
+                <p>Verified Users</p>
+              </div>
             </div>
           </div>
-          {renderContent()}
-        </div>
+
+          {/* Verification Requests Section */}
+          <div className="dashboard-section">
+            <div className="section-header">
+              <h2>
+                <Shield size={20} /> 
+                Verification Requests
+                <span className="badge">{recentVerifications.length}</span>
+              </h2>
+              <Link to="/admin/verification" className="view-all">
+                View All →
+              </Link>
+            </div>
+            
+            {recentVerifications.length === 0 ? (
+              <div className="empty-state">
+                <p>No pending verification requests</p>
+              </div>
+            ) : (
+              <div className="requests-list">
+                {recentVerifications.map((req) => (
+                  <div key={req._id} className="request-item">
+                    <div className="request-user">
+                      <img 
+                        src={req.profile?.profilePicture?.url || '/default-avatar.png'} 
+                        alt={req.username}
+                        className="user-avatar"
+                      />
+                      <div>
+                        <strong>{req.username}</strong>
+                        <p className="request-category">
+                          {req.verification?.verificationRequest?.category}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="request-meta">
+                      <span className="request-date">
+                        {new Date(req.verification?.verificationRequest?.submittedAt).toLocaleDateString()}
+                      </span>
+                      <Link 
+                        to={`/admin/verification/review/${req._id}`}
+                        className="review-link"
+                      >
+                        Review
+                      </Link>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Recent Activity */}
+          <div className="dashboard-section">
+            <div className="section-header">
+              <h2><TrendingUp size={20} /> Recent Activity</h2>
+            </div>
+            
+            <div className="activity-list">
+              {/* Add recent activities here */}
+              <div className="activity-item">
+                <div className="activity-icon success">
+                  <CheckCircle size={16} />
+                </div>
+                <div className="activity-content">
+                  <p><strong>John Doe</strong> account was verified</p>
+                  <span className="activity-time">2 hours ago</span>
+                </div>
+              </div>
+              
+              <div className="activity-item">
+                <div className="activity-icon warning">
+                  <Clock size={16} />
+                </div>
+                <div className="activity-content">
+                  <p><strong>Jane Smith</strong> reported a post</p>
+                  <span className="activity-time">5 hours ago</span>
+                </div>
+              </div>
+              
+              <div className="activity-item">
+                <div className="activity-icon danger">
+                  <XCircle size={16} />
+                </div>
+                <div className="activity-content">
+                  <p><strong>Spam Account</strong> was banned</p>
+                  <span className="activity-time">1 day ago</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="dashboard-section">
+            <div className="section-header">
+              <h2>Quick Actions</h2>
+            </div>
+            
+            <div className="quick-actions">
+              <Link to="/admin/verification" className="action-card">
+                <div className="action-icon">
+                  <Shield size={24} />
+                </div>
+                <div className="action-info">
+                  <h4>Manage Verification</h4>
+                  <p>Review pending verification requests</p>
+                </div>
+              </Link>
+              
+              <Link to="/admin/users" className="action-card">
+                <div className="action-icon">
+                  <Users size={24} />
+                </div>
+                <div className="action-info">
+                  <h4>User Management</h4>
+                  <p>View and manage all users</p>
+                </div>
+              </Link>
+              
+              <Link to="/admin/reports" className="action-card">
+                <div className="action-icon">
+                  <FileText size={24} />
+                </div>
+                <div className="action-info">
+                  <h4>Content Reports</h4>
+                  <p>Review reported content</p>
+                </div>
+              </Link>
+            </div>
+          </div>
+        </main>
       </div>
     </div>
   );
 };
 
-export default AdminDashboard;
+export default Dashboard;
