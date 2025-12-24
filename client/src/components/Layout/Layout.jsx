@@ -3,6 +3,27 @@ import React, { useState } from 'react';
 import { Outlet, Link, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { logout } from '../../store/slices/authSlice';
+import { 
+  Home, 
+  Users, 
+  MessageCircle, 
+  Bell, 
+  ShoppingBag,
+  Menu,
+  X,
+  ChevronLeft,
+  Plus,
+  Search,
+  Settings,
+  HelpCircle,
+  UserPlus,
+  LogOut,
+  Calendar,
+  MapPin,
+  Clock,
+  Flag,
+  CheckCircle
+} from 'react-feather';
 import './Layout.css';
 
 const Layout = () => {
@@ -17,20 +38,20 @@ const Layout = () => {
   };
 
   const menuItems = [
-    { icon: 'fi fi-ts-settings', label: 'Settings & Privacy', path: '/settings' },
-    { icon: 'fi fi-ts-headset-help', label: 'Help & Support', path: '/help' },
-    { icon: 'fi fi-ts-user-add', label: 'Add Account', path: '/add-account' },
+    { icon: <Settings size={20} />, label: 'Settings & Privacy', path: '/settings' },
+    { icon: <HelpCircle size={20} />, label: 'Help & Support', path: '/help' },
+    { icon: <UserPlus size={20} />, label: 'Add Account', path: '/add-account' },
   ];
 
   const gridItems = [
-    { icon: 'fi fi-ts-calendar-star', label: 'Events' },
-    { icon: 'fi fi-ts-birthday-cake', label: 'Birthdays' },
-    { icon: 'fi fi-ts-newspaper', label: 'Pages' },
-    { icon: 'fi fi-ts-clock-rotate-left', label: 'Memories' },
-    { icon: 'fi fi-ts-friends', label: 'Friends' },
-    { icon: 'fi fi-ts-envelope', label: 'Messages' },
-    { icon: 'fi fi-ts-store', label: 'Marketplace' },
-    { icon: 'fi fi-ts-badge-check', label: 'Verification' },
+    { icon: <Calendar size={20} />, label: 'Events' },
+    { icon: '🎂', label: 'Birthdays' },
+    { icon: '📰', label: 'Pages' },
+    { icon: <Clock size={20} />, label: 'Memories' },
+    { icon: <Users size={20} />, label: 'Friends' },
+    { icon: <MessageCircle size={20} />, label: 'Messages' },
+    { icon: <ShoppingBag size={20} />, label: 'Marketplace' },
+    { icon: <CheckCircle size={20} />, label: 'Verification' },
   ];
 
   return (
@@ -40,7 +61,7 @@ const Layout = () => {
         <div className="header-container">
           {/* Back Button (only shows on non-home pages) */}
           <button className="back-btn" onClick={() => navigate(-1)}>
-            <i className="fi fi-rr-angle-double-left"></i>
+            <ChevronLeft size={24} />
           </button>
 
           {/* Logo */}
@@ -52,11 +73,11 @@ const Layout = () => {
           {/* Right Actions */}
           <div className="header-actions">
             <button className="action-btn add-story-btn">
-              <i className="fi fi-tr-add"></i>
+              <Plus size={20} />
             </button>
             
             <button className="action-btn search-btn">
-              <i className="fi fi-tr-search"></i>
+              <Search size={20} />
             </button>
             
             {/* Menu Button */}
@@ -65,7 +86,7 @@ const Layout = () => {
                 className="action-btn menu-btn"
                 onClick={() => setShowMenu(!showMenu)}
               >
-                <i className="fi fi-rr-menu-burger"></i>
+                <Menu size={20} />
               </button>
               
               {/* Dropdown Menu */}
@@ -77,7 +98,7 @@ const Layout = () => {
                       className="close-menu"
                       onClick={() => setShowMenu(false)}
                     >
-                      ✕
+                      <X size={20} />
                     </button>
                   </div>
                   
@@ -103,13 +124,13 @@ const Layout = () => {
                         className="menu-item"
                         onClick={() => setShowMenu(false)}
                       >
-                        <i className={item.icon}></i>
+                        {item.icon}
                         <span>{item.label}</span>
                       </Link>
                     ))}
                     
                     <button className="menu-item logout-btn" onClick={handleLogout}>
-                      <i className="fi fi-ts-log-out"></i>
+                      <LogOut size={20} />
                       <span>Log Out</span>
                     </button>
                   </div>
@@ -118,7 +139,11 @@ const Layout = () => {
                   <div className="menu-grid">
                     {gridItems.map((item, index) => (
                       <button key={index} className="grid-item">
-                        <i className={item.icon}></i>
+                        {typeof item.icon === 'string' ? (
+                          <span className="emoji-icon">{item.icon}</span>
+                        ) : (
+                          item.icon
+                        )}
                         <span>{item.label}</span>
                       </button>
                     ))}
@@ -134,30 +159,30 @@ const Layout = () => {
       <nav className="main-nav">
         <div className="nav-container">
           <Link to="/" className="nav-item">
-            <i className="fi fi-rr-home"></i>
+            <Home size={24} />
             <span className="nav-label">Home</span>
             <span className="notification-badge">20+</span>
           </Link>
           
           <Link to="/friends" className="nav-item">
-            <i className="fi fi-tr-followers"></i>
+            <Users size={24} />
             <span className="nav-label">Friends</span>
           </Link>
           
           <Link to="/messenger" className="nav-item">
-            <i className="fi fi-brands-facebook-messenger-circle"></i>
+            <MessageCircle size={24} />
             <span className="nav-label">Messenger</span>
             <span className="notification-badge">5</span>
           </Link>
           
           <Link to="/notifications" className="nav-item">
-            <i className="fi fi-ts-bell-notification-social-media"></i>
+            <Bell size={24} />
             <span className="nav-label">Notifications</span>
             <span className="notification-badge">3</span>
           </Link>
           
           <Link to="/marketplace" className="nav-item">
-            <i className="fi fi-ts-marketplace-alt"></i>
+            <ShoppingBag size={24} />
             <span className="nav-label">Marketplace</span>
           </Link>
         </div>
