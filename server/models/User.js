@@ -50,7 +50,7 @@ const userSchema = new mongoose.Schema({
     }]
   },
   
-  // ADD THESE NEW FIELDS
+  // VERIFICATION SYSTEM FIELDS
   role: {
     type: String,
     enum: ['user', 'admin', 'super_admin'],
@@ -60,26 +60,36 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  verifiedSince: Date,
+  verificationType: {
+    type: String,
+    enum: ['celebrity', 'public_figure', 'brand', 'organization', 'government', 'journalist', 'entertainer', 'sports', 'activist', null],
+    default: null
+  },
   verificationRequest: {
-    requestedAt: Date,
     status: {
       type: String,
-      enum: ['pending', 'approved', 'rejected', 'none'],
-      default: 'none'
+      enum: ['pending', 'approved', 'rejected', 'not_requested'],
+      default: 'not_requested'
     },
-    documents: [{
-      type: { type: String }, // 'id_card', 'passport', 'business_doc'
-      url: String,
-      publicId: String
-    }],
-    message: String,
+    submittedAt: Date,
+    reviewedAt: Date,
     reviewedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User'
     },
-    reviewedAt: Date
+    rejectionReason: String,
+    supportingDocuments: [{
+      documentType: String,
+      url: String,
+      publicId: String
+    }],
+    justification: String,
+    category: String,
+    website: String,
+    followersCount: Number
   },
-  // END OF NEW FIELDS
+  // END OF VERIFICATION FIELDS
   
   friends: [{
     type: mongoose.Schema.Types.ObjectId,
@@ -149,5 +159,11 @@ userSchema.pre('save', function(next) {
   this.updatedAt = Date.now();
   next();
 });
+
+// Indexes for verification queries
+userSchema.index({ isVerified: 1 });
+userSchema.index({ 'verificationRequest.status': 1 });
+userSchema.index({ 'verificationRequest.submittedAt': -1 });
+userSchema.index({ 'verificationRequest.reviewedAt': -1 });
 
 module.exports = mongoose.model('User', userSchema);
