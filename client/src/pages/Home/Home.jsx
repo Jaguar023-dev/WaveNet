@@ -1,6 +1,7 @@
 // client/src/pages/Home/Home.jsx
 import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import { Image } from 'react-feather';
 import { fetchFeed, clearPosts } from '../../store/slices/postSlice';
 import Post from '../../components/Post/Post';
@@ -18,6 +19,7 @@ const Home = () => {
   const [page, setPage] = useState(1);
   
   const dispatch = useDispatch();
+  const navigate = useNavigate(); // Add navigate hook
   const { feed, loading, error } = useSelector(state => state.posts);
   const { user } = useSelector(state => state.auth);
   const feedRef = useRef(null);
@@ -71,6 +73,16 @@ const Home = () => {
     setShowCreatePost(false);
   };
 
+  // Handle profile click
+  const handleProfileClick = () => {
+    if (user?._id) {
+      console.log('👤 Navigating to profile:', user._id);
+      navigate(`/profile/${user._id}`);
+    } else {
+      console.error('No user ID found');
+    }
+  };
+
   return (
     <div className="home-container">
       {/* DEBUG - Remove in production */}
@@ -84,11 +96,22 @@ const Home = () => {
       {/* User Profile and Create Post Button */}
       <div className="create-post-section">
         <div className="user-profile-row">
-          <img 
-            src={user?.profile?.profilePicture?.url || '/default-avatar.png'} 
-            alt={user?.username}
-            className="profile-pic-small"
-          />
+          {/* Clickable Profile Picture */}
+          <div 
+            className="profile-pic-container"
+            onClick={handleProfileClick}
+            title="Go to your profile"
+          >
+            <img 
+              src={user?.profile?.profilePicture?.url || '/default-avatar.png'} 
+              alt={user?.username}
+              className="profile-pic-small"
+            />
+            <div className="profile-click-overlay">
+              <span>Profile</span>
+            </div>
+          </div>
+          
           <button 
             className="whats-on-mind"
             onClick={() => setShowCreatePost(true)}
