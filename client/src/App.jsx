@@ -26,6 +26,9 @@ import Settings from './pages/Settings/Settings';
 import Verification from './pages/Verification/Verification';
 import VerificationManager from './pages/Admin/VerificationManager';
 
+// Admin Pages (if you have it, otherwise use placeholder)
+// import AdminDashboard from './pages/Admin/Dashboard';
+
 function App() {
   console.log('🚀 App component rendering');
   
@@ -37,28 +40,23 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         
-        {/* Protected Routes with Layout */}
-        <Route element={<ProtectedRoute />}>
-          <Route element={<Layout />}>
-            <Route path="/home" element={<Home />} />
-            <Route path="/profile/:id" element={<Profile />} />
-            <Route path="/friends" element={<Friends />} />
-            <Route path="/groups" element={<Groups />} />
-            <Route path="/watch" element={<Watch />} />
-            <Route path="/marketplace" element={<Marketplace />} />
-            <Route path="/messenger" element={<Messenger />} />
-            <Route path="/notifications" element={<Notifications />} />
-            <Route path="/settings" element={<Settings />} />
-            
-            {/* FIXED: Single verification route inside Layout */}
-            <Route path="/verification" element={<Verification />} />
-          </Route>
-          
-          {/* ADDED: Admin Verification Management Route - Outside Layout */}
-          <Route path="/admin/verification" element={<VerificationManager />} />
-          
-          {/* ADDED: Admin Verification Review Route */}
-          <Route path="/admin/verification/review/:userId" element={
+        {/* ADDED: Verification Route - Public but requires login */}
+        <Route path="/verification" element={
+          <ProtectedRoute>
+            <Verification />
+          </ProtectedRoute>
+        } />
+        
+        {/* ADDED: Admin Verification Management Route */}
+        <Route path="/admin/verification" element={
+          <ProtectedRoute>
+            <VerificationManager />
+          </ProtectedRoute>
+        } />
+        
+        {/* ADDED: Admin Verification Review Route */}
+        <Route path="/admin/verification/review/:userId" element={
+          <ProtectedRoute>
             <div style={{ 
               padding: '40px', 
               textAlign: 'center',
@@ -83,10 +81,12 @@ function App() {
                 Back to Verification Management
               </button>
             </div>
-          } />
-          
-          {/* Admin Route - Protected */}
-          <Route path="/admin" element={
+          </ProtectedRoute>
+        } />
+        
+        {/* Admin Route - Protected */}
+        <Route path="/admin" element={
+          <ProtectedRoute>
             <div style={{ 
               padding: '40px', 
               textAlign: 'center',
@@ -108,9 +108,11 @@ function App() {
                   <li>Content Moderation</li>
                   <li>Analytics Dashboard</li>
                   <li>System Settings</li>
+                  {/* ADDED: Verification Management to admin features */}
                   <li>Verification Management</li>
                 </ul>
               </div>
+              {/* ADDED: Quick links for admin */}
               <div style={{ 
                 marginTop: '20px',
                 display: 'flex',
@@ -147,12 +149,48 @@ function App() {
               </div>
               <p><em>Admin functionality coming soon!</em></p>
             </div>
-          } />
-          
-          {/* ADDED: Verification success redirect route */}
-          <Route 
-            path="/verification/success" 
-            element={
+          </ProtectedRoute>
+        } />
+        
+        {/* Protected Routes with Layout */}
+        <Route element={<ProtectedRoute />}>
+          <Route element={<Layout />}>
+            <Route path="/home" element={<Home />} />
+            <Route path="/profile/:id" element={<Profile />} />
+            <Route path="/friends" element={<Friends />} />
+            <Route path="/groups" element={<Groups />} />
+            <Route path="/watch" element={<Watch />} />
+            <Route path="/marketplace" element={<Marketplace />} />
+            <Route path="/messenger" element={<Messenger />} />
+            <Route path="/notifications" element={<Notifications />} />
+            <Route path="/settings" element={<Settings />} />
+            
+            {/* ADDED: Verification page also accessible through layout */}
+            <Route path="/get-verified" element={
+              <div style={{ 
+                padding: '20px',
+                maxWidth: '800px',
+                margin: '0 auto'
+              }}>
+                <Verification />
+              </div>
+            } />
+          </Route>
+        </Route>
+        
+        {/* Redirect root to /home */}
+        <Route 
+          path="/" 
+          element={
+            <Navigate to="/home" replace />
+          } 
+        />
+        
+        {/* ADDED: Verification success redirect route */}
+        <Route 
+          path="/verification/success" 
+          element={
+            <ProtectedRoute>
               <div style={{ 
                 padding: '40px',
                 textAlign: 'center',
@@ -191,13 +229,15 @@ function App() {
                   Return to Home
                 </button>
               </div>
-            } 
-          />
-          
-          {/* ADDED: Verification rejected route */}
-          <Route 
-            path="/verification/rejected" 
-            element={
+            </ProtectedRoute>
+          } 
+        />
+        
+        {/* ADDED: Verification rejected route */}
+        <Route 
+          path="/verification/rejected" 
+          element={
+            <ProtectedRoute>
               <div style={{ 
                 padding: '40px',
                 textAlign: 'center',
@@ -252,15 +292,7 @@ function App() {
                   </button>
                 </div>
               </div>
-            } 
-          />
-        </Route>
-        
-        {/* Redirect root to /home */}
-        <Route 
-          path="/" 
-          element={
-            <Navigate to="/home" replace />
+            </ProtectedRoute>
           } 
         />
         
@@ -302,6 +334,7 @@ function App() {
               >
                 Go to Home
               </a>
+              {/* ADDED: Verification link to 404 page */}
               <a 
                 href="/verification" 
                 style={{ 
