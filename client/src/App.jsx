@@ -1,8 +1,6 @@
 // client/src/App.jsx
-import React, { useEffect } from 'react';
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { Provider, useDispatch, useSelector } from 'react-redux';
-import { store } from './store';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -24,51 +22,62 @@ import Messenger from './pages/Messenger/Messenger';
 import Notifications from './pages/Notifications/Notifications';
 import Settings from './pages/Settings/Settings';
 
-// Admin Pages
-import AdminDashboard from './pages/Admin/Dashboard';
+// Admin Pages (if you have it, otherwise use placeholder)
+// import AdminDashboard from './pages/Admin/Dashboard';
 
-// Loading
-import LoadingSpinner from './components/Common/LoadingSpinner';
-
-// Main App Component
-function AppContent() {
-  const dispatch = useDispatch();
-  const { loading, isAuthenticated } = useSelector(state => state.auth);
-
-  useEffect(() => {
-    // Dispatch getCurrentUser if your authSlice has this action
-    // If not, you can remove this useEffect
-  }, [dispatch]);
-
-  if (loading) {
-    return (
-      <div className="app-loading" style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: '100vh'
-      }}>
-        <LoadingSpinner text="Loading WaveNet..." />
-      </div>
-    );
-  }
-
+function App() {
+  console.log('🚀 App component rendering');
+  
   return (
     <Router>
       <Routes>
         {/* Public Routes - No Layout */}
-        <Route path="/login" element={
-          isAuthenticated ? <Navigate to="/home" replace /> : <Login />
-        } />
-        <Route path="/register" element={
-          isAuthenticated ? <Navigate to="/home" replace /> : <Register />
-        } />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         
-        {/* Admin Route - Separate from main layout */}
-        <Route path="/admin/*" element={
+        {/* Admin Route - Protected */}
+        <Route path="/admin" element={
           <ProtectedRoute>
-            <AdminDashboard />
+            <div style={{ 
+              padding: '40px', 
+              textAlign: 'center',
+              fontFamily: 'Arial, sans-serif' 
+            }}>
+              <h1>🎯 Admin Panel</h1>
+              <p>Welcome to the WaveNet Admin Panel</p>
+              <div style={{ 
+                marginTop: '30px',
+                padding: '20px',
+                backgroundColor: '#f5f5f5',
+                borderRadius: '10px',
+                maxWidth: '600px',
+                margin: '30px auto'
+              }}>
+                <h3>Admin Features:</h3>
+                <ul style={{ textAlign: 'left', display: 'inline-block' }}>
+                  <li>User Management</li>
+                  <li>Content Moderation</li>
+                  <li>Analytics Dashboard</li>
+                  <li>System Settings</li>
+                </ul>
+              </div>
+              <p><em>Admin functionality coming soon!</em></p>
+              <button 
+                onClick={() => window.location.href = '/home'}
+                style={{
+                  padding: '10px 20px',
+                  backgroundColor: '#1877f2',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '5px',
+                  cursor: 'pointer',
+                  marginTop: '20px'
+                }}
+              >
+                Back to Home
+              </button>
+            </div>
           </ProtectedRoute>
         } />
         
@@ -87,13 +96,11 @@ function AppContent() {
           </Route>
         </Route>
         
-        {/* Redirect root to /home if authenticated, /login if not */}
+        {/* Redirect root to /home */}
         <Route 
           path="/" 
           element={
-            isAuthenticated ? 
-              <Navigate to="/home" replace /> : 
-              <Navigate to="/login" replace />
+            <Navigate to="/home" replace />
           } 
         />
         
@@ -107,25 +114,50 @@ function AppContent() {
             <h1>404 - Page Not Found</h1>
             <p>The page you're looking for doesn't exist.</p>
             <div style={{ marginTop: '20px' }}>
-              <a href="/login" style={{ margin: '10px', color: '#1877f2' }}>Go to Login</a>
-              <a href="/" style={{ margin: '10px', color: '#1877f2' }}>Go to Home</a>
+              <a 
+                href="/login" 
+                style={{ 
+                  margin: '10px', 
+                  padding: '10px 20px',
+                  backgroundColor: '#1877f2',
+                  color: 'white',
+                  textDecoration: 'none',
+                  borderRadius: '5px',
+                  display: 'inline-block'
+                }}
+              >
+                Go to Login
+              </a>
+              <a 
+                href="/home" 
+                style={{ 
+                  margin: '10px', 
+                  padding: '10px 20px',
+                  backgroundColor: '#42b72a',
+                  color: 'white',
+                  textDecoration: 'none',
+                  borderRadius: '5px',
+                  display: 'inline-block'
+                }}
+              >
+                Go to Home
+              </a>
             </div>
           </div>
         } />
       </Routes>
-      <ToastContainer position="top-right" autoClose={3000} />
+      <ToastContainer 
+        position="top-right" 
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
     </Router>
-  );
-}
-
-// Main App Wrapper with Provider
-function App() {
-  console.log('🚀 App component rendering');
-  
-  return (
-    <Provider store={store}>
-      <AppContent />
-    </Provider>
   );
 }
 
