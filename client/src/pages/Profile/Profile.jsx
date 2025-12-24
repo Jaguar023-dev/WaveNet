@@ -27,7 +27,8 @@ import {
   MessageCircle,
   Heart,
   Share2,
-  Bookmark
+  Bookmark,
+  CheckCircle // ADD THIS IMPORT
 } from 'react-feather';
 import './Profile.css';
 
@@ -317,7 +318,15 @@ const Profile = () => {
         />
 
         <div className="profile-info">
-          <h1 className="profile-name">{profileUser.username}</h1>
+          <h1 className="profile-name">
+            {profileUser.username}
+            {profileUser.isVerified && (
+              <span className="verified-badge" title="Verified Account">
+                <CheckCircle size={20} />
+                <span className="verified-text">Verified</span>
+              </span>
+            )}
+          </h1>
           <p className="profile-bio">{profileUser.profile?.bio || 'No bio yet'}</p>
           <div className="profile-stats">
             <div className="stat">
@@ -527,7 +536,14 @@ const Profile = () => {
                       className="post-author-avatar"
                     />
                     <div className="post-author-info">
-                      <h4>{profileUser.username}</h4>
+                      <div className="post-author-header">
+                        <h4>{profileUser.username}</h4>
+                        {profileUser.isVerified && (
+                          <span className="post-verified-badge" title="Verified Account">
+                            <CheckCircle size={14} />
+                          </span>
+                        )}
+                      </div>
                       <div className="post-meta">
                         <span>{post.time}</span>
                         <span className="privacy-badge">
@@ -568,8 +584,8 @@ const Profile = () => {
                       <Bookmark size={20} />
                       <span>Save</span>
                     </button>
-                  </div>
-                </div>
+                    </div>
+                   </div>
               ))
             ) : (
               <div className="no-posts">
