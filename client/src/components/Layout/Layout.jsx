@@ -44,14 +44,14 @@ const Layout = () => {
   ];
 
   const gridItems = [
-    { icon: <Calendar size={20} />, label: 'Events' },
-    { icon: '🎂', label: 'Birthdays' },
-    { icon: '📰', label: 'Pages' },
-    { icon: <Clock size={20} />, label: 'Memories' },
-    { icon: <Users size={20} />, label: 'Friends' },
-    { icon: <MessageCircle size={20} />, label: 'Messages' },
-    { icon: <ShoppingBag size={20} />, label: 'Marketplace' },
-    { icon: <CheckCircle size={20} />, label: 'Verification' },
+    { icon: <Calendar size={20} />, label: 'Events', path: '/events' },
+    { icon: '🎂', label: 'Birthdays', path: '/birthdays' },
+    { icon: '📰', label: 'Pages', path: '/pages' },
+    { icon: <Clock size={20} />, label: 'Memories', path: '/memories' },
+    { icon: <Users size={20} />, label: 'Friends', path: '/friends' },
+    { icon: <MessageCircle size={20} />, label: 'Messages', path: '/messenger' },
+    { icon: <ShoppingBag size={20} />, label: 'Marketplace', path: '/marketplace' },
+    { icon: <CheckCircle size={20} />, label: 'Verification', path: '/verification' }, // Added path
   ];
 
   return (
@@ -138,14 +138,30 @@ const Layout = () => {
                   {/* Grid Items (2x2 layout) */}
                   <div className="menu-grid">
                     {gridItems.map((item, index) => (
-                      <button key={index} className="grid-item">
-                        {typeof item.icon === 'string' ? (
-                          <span className="emoji-icon">{item.icon}</span>
-                        ) : (
-                          item.icon
-                        )}
-                        <span>{item.label}</span>
-                      </button>
+                      item.path ? (
+                        <Link 
+                          key={index} 
+                          to={item.path} 
+                          className="grid-item"
+                          onClick={() => setShowMenu(false)}
+                        >
+                          {typeof item.icon === 'string' ? (
+                            <span className="emoji-icon">{item.icon}</span>
+                          ) : (
+                            item.icon
+                          )}
+                          <span>{item.label}</span>
+                        </Link>
+                      ) : (
+                        <button key={index} className="grid-item">
+                          {typeof item.icon === 'string' ? (
+                            <span className="emoji-icon">{item.icon}</span>
+                          ) : (
+                            item.icon
+                          )}
+                          <span>{item.label}</span>
+                        </button>
+                      )
                     ))}
                   </div>
                 </div>
