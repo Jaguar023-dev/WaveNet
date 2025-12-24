@@ -2,41 +2,47 @@ const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
 const Notification = require('../models/Notification');
-const auth = require('../middleware/auth');
-const upload = require('../middleware/upload');
+const { protect } = require('../middleware/auth');  // Fixed: destructure protect
+const { upload } = require('../middleware/upload');  // Fixed: destructure upload
 const { sendNotification } = require('../utils/helpers');
 
 // Get verification status
-router.get('/status', auth, async (req, res) => {
+router.get('/status', protect, async (req, res) => {
   try {
-    const user = await User.findById(req.user.userId)
-      .select('verification username email profile');
+    const user = await User.findById(req.user.id)  // Changed: req.user.userId → req.user.id
+      .select('isVerified verificationType verificationRequest verifiedSince username email profile');
     
-    res.json(user.verification);
+    res.json({
+      isVerified: user.isVerified,
+      verificationType: user.verificationType,
+      verificationRequest: user.verificationRequest,
+      verifiedSince: user.verifiedSince
+    });
   } catch (error) {
+    console.error('Status error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
 
 // Submit verification request
-router.post('/request', auth, upload.single('document'), async (req, res) => {
+router.post('/request', protect, upload.single('document'), async (req, res) => {
   try {
-    const user = await User.findById(req.user.userId);
+    const user = await User.findById(req.user.id);  // Changed: req.user.userId → req.user.id
     
     // Check if already verified
-    if (user.verification.isVerified) {
+    if (user.isVerified) {  // Changed: user.verification.isVerified → user.isVerified
       return res.status(400).json({ message: 'Account is already verified' });
     }
     
     // Check if pending request exists
-    if (user.verification.verificationRequest.status === 'pending') {
+    if (user.verificationRequest && user.verificationRequest.status === 'pending') {  // Changed: user.verification.verificationRequest → user.verificationRequest
       return res.status(400).json({ message: 'Verification request already pending' });
     }
     
     const { category, justification, website, followersCount } = req.body;
     
     // Update verification request
-    user.verification.verificationRequest = {
+    user.verificationRequest = {  // Changed: user.verification.verificationRequest → user.verificationRequest
       status: 'pending',
       submittedAt: new Date(),
       category,
@@ -45,7 +51,7 @@ router.post('/request', auth, upload.single('document'), async (req, res) => {
       followersCount: followersCount ? parseInt(followersCount) : 0,
       supportingDocuments: req.file ? [{
         documentType: 'identity',
-        url: req.file.path,
+        url: `/uploads/verification/${req.file.filename}`,
         publicId: req.file.filename
       }] : []
     };
@@ -81,28 +87,29 @@ router.post('/request', auth, upload.single('document'), async (req, res) => {
 });
 
 // Get all pending verification requests (Admin only)
-router.get('/requests/pending', auth, async (req, res) => {
+router.get('/requests/pending', protect, async (req, res) => {
   try {
-    if (req.user.role !== 'admin' && req.user.role !== 'super_admin') {
+    if (req.user.role !== 'admin' && req.user.role !== 'super_admin') {  // Changed: req.user.user.role → req.user.role
       return res.status(403).json({ message: 'Access denied' });
     }
     
     const pendingRequests = await User.find({
-      'verification.verificationRequest.status': 'pending'
+      'verificationRequest.status': 'pending'  // Changed: 'verification.verificationRequest.status' → 'verificationRequest.status'
     })
-    .select('username email profile verification createdAt')
-    .sort({ 'verification.verificationRequest.submittedAt': -1 });
+    .select('username email profile isVerified verificationType verificationRequest createdAt')
+    .sort({ 'verificationRequest.submittedAt': -1 });  // Changed: 'verification.verificationRequest.submittedAt' → 'verificationRequest.submittedAt'
     
     res.json(pendingRequests);
   } catch (error) {
+    console.error('Pending requests error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
 
 // Approve verification request (Admin only)
-router.post('/:userId/approve', auth, async (req, res) => {
+router.post('/:userId/approve', protect, async (req, res) => {
   try {
-    if (req.user.role !== 'admin' && req.user.role !== 'super_admin') {
+    if (req.user.role !== 'admin' && req.user.role !== 'super_admin') {  // Changed: req.user.user.role → req.user.role
       return res.status(403).json({ message: 'Access denied' });
     }
     
@@ -111,17 +118,17 @@ router.post('/:userId/approve', auth, async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
     
-    if (user.verification.verificationRequest.status !== 'pending') {
+    if (!user.verificationRequest || user.verificationRequest.status !== 'pending') {  // Changed: user.verification.verificationRequest → user.verificationRequest
       return res.status(400).json({ message: 'No pending verification request' });
     }
     
     // Approve verification
-    user.verification.isVerified = true;
-    user.verification.verifiedSince = new Date();
-    user.verification.verificationType = user.verification.verificationRequest.category;
-    user.verification.verificationRequest.status = 'approved';
-    user.verification.verificationRequest.reviewedAt = new Date();
-    user.verification.verificationRequest.reviewedBy = req.user.userId;
+    user.isVerified = true;  // Changed: user.verification.isVerified → user.isVerified
+    user.verifiedSince = new Date();
+    user.verificationType = user.verificationRequest.category;  // Changed: user.verification.verificationRequest.category → user.verificationRequest.category
+    user.verificationRequest.status = 'approved';
+    user.verificationRequest.reviewedAt = new Date();
+    user.verificationRequest.reviewedBy = req.user.id;  // Changed: req.user.userId → req.user.id
     
     await user.save();
     
@@ -132,14 +139,14 @@ router.post('/:userId/approve', auth, async (req, res) => {
       title: 'Congratulations! You\'re Now Verified',
       message: 'Your WaveNet account has been verified. The blue verification badge will now appear next to your name.',
       data: {
-        verifiedSince: user.verification.verifiedSince,
-        verifiedBy: req.user.userId
+        verifiedSince: user.verifiedSince,
+        verifiedBy: req.user.id  // Changed: req.user.userId → req.user.id
       }
     });
     
     // Create notification for admin
     await Notification.create({
-      recipient: req.user.userId,
+      recipient: req.user.id,  // Changed: req.user.userId → req.user.id
       type: 'verification_approved_admin',
       title: 'Verification Request Approved',
       message: `You approved ${user.username}'s verification request`,
@@ -161,9 +168,9 @@ router.post('/:userId/approve', auth, async (req, res) => {
 });
 
 // Reject verification request (Admin only)
-router.post('/:userId/reject', auth, async (req, res) => {
+router.post('/:userId/reject', protect, async (req, res) => {
   try {
-    if (req.user.role !== 'admin' && req.user.role !== 'super_admin') {
+    if (req.user.role !== 'admin' && req.user.role !== 'super_admin') {  // Changed: req.user.user.role → req.user.role
       return res.status(403).json({ message: 'Access denied' });
     }
     
@@ -179,15 +186,15 @@ router.post('/:userId/reject', auth, async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
     
-    if (user.verification.verificationRequest.status !== 'pending') {
+    if (!user.verificationRequest || user.verificationRequest.status !== 'pending') {  // Changed: user.verification.verificationRequest → user.verificationRequest
       return res.status(400).json({ message: 'No pending verification request' });
     }
     
     // Reject verification
-    user.verification.verificationRequest.status = 'rejected';
-    user.verification.verificationRequest.rejectionReason = rejectionReason;
-    user.verification.verificationRequest.reviewedAt = new Date();
-    user.verification.verificationRequest.reviewedBy = req.user.userId;
+    user.verificationRequest.status = 'rejected';  // Changed: user.verification.verificationRequest → user.verificationRequest
+    user.verificationRequest.rejectionReason = rejectionReason;
+    user.verificationRequest.reviewedAt = new Date();
+    user.verificationRequest.reviewedBy = req.user.id;  // Changed: req.user.userId → req.user.id
     
     await user.save();
     
@@ -199,7 +206,7 @@ router.post('/:userId/reject', auth, async (req, res) => {
       message: `Your verification request has been denied: ${rejectionReason}`,
       data: {
         rejectionReason,
-        reviewedBy: req.user.userId,
+        reviewedBy: req.user.id,  // Changed: req.user.userId → req.user.id
         reviewedAt: new Date()
       }
     });
@@ -216,33 +223,33 @@ router.post('/:userId/reject', auth, async (req, res) => {
 });
 
 // Get verification statistics (Admin only)
-router.get('/stats', auth, async (req, res) => {
+router.get('/stats', protect, async (req, res) => {
   try {
-    if (req.user.role !== 'admin' && req.user.role !== 'super_admin') {
+    if (req.user.role !== 'admin' && req.user.role !== 'super_admin') {  // Changed: req.user.user.role → req.user.role
       return res.status(403).json({ message: 'Access denied' });
     }
     
     const totalRequests = await User.countDocuments({
-      'verification.verificationRequest.status': { $ne: 'not_requested' }
+      'verificationRequest.status': { $ne: 'not_requested' }  // Changed: 'verification.verificationRequest.status' → 'verificationRequest.status'
     });
     
     const pendingRequests = await User.countDocuments({
-      'verification.verificationRequest.status': 'pending'
+      'verificationRequest.status': 'pending'  // Changed: 'verification.verificationRequest.status' → 'verificationRequest.status'
     });
     
     const approvedRequests = await User.countDocuments({
-      'verification.isVerified': true
+      isVerified: true  // Changed: 'verification.isVerified' → isVerified
     });
     
     const rejectedRequests = await User.countDocuments({
-      'verification.verificationRequest.status': 'rejected'
+      'verificationRequest.status': 'rejected'  // Changed: 'verification.verificationRequest.status' → 'verificationRequest.status'
     });
     
     // Category breakdown
     const categories = await User.aggregate([
-      { $match: { 'verification.isVerified': true } },
+      { $match: { isVerified: true } },  // Changed: 'verification.isVerified' → isVerified
       { $group: { 
-        _id: '$verification.verificationType', 
+        _id: '$verificationType',  // Changed: '$verification.verificationType' → '$verificationType'
         count: { $sum: 1 } 
       }},
       { $sort: { count: -1 } }
