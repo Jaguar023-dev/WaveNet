@@ -1,3 +1,4 @@
+// server/routes/index.js
 const express = require('express');
 const router = express.Router();
 
@@ -14,6 +15,9 @@ const eventRoutes = require('./events');
 const videoRoutes = require('./videos');
 const pageRoutes = require('./pages');
 
+// ADDED: Verification routes
+const verificationRoutes = require('./verification');
+
 // Use routes
 router.use('/auth', authRoutes);
 router.use('/users', userRoutes);
@@ -26,5 +30,8 @@ router.use('/marketplace', marketplaceRoutes);
 router.use('/events', eventRoutes);
 router.use('/videos', videoRoutes);
 router.use('/pages', pageRoutes);
+
+// ADDED: Use verification routes
+router.use('/verification', verificationRoutes);
 
 module.exports = router;
