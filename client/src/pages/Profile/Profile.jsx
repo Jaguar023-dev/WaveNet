@@ -592,9 +592,12 @@ const Profile = () => {
                   Submitted: {new Date(profileUser.verificationRequest.submittedAt).toLocaleDateString()}
                 </p>
               </div>
-              <button className="view-request-btn" onClick={() => navigate('/verification')}>
-                View Request Details
-              </button>
+           <button className="view-request-btn" onClick={() => navigate('/verification')}>
+  View Request Details
+</button> {/* Changed from </div> to </button> */}
+<button className="learn-more-btn" onClick={() => navigate('/verification')}>
+  Learn more about verification
+</button>
             </div>
           )}
 
