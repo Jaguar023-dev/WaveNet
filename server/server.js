@@ -119,27 +119,7 @@ app.use('/api', limiter);
 // Database connection
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/wavenet';
 
-const connectDB = async () => {
-  try {
-    await mongoose.connect(MONGODB_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-      serverSelectionTimeoutMS: 5000,
-      socketTimeoutMS: 45000,
-    });
-    console.log('✅ Connected to MongoDB');
-    console.log(`📊 Database: ${MONGODB_URI.split('@').pop() || MONGODB_URI}`);
-    
-    // CREATE ADMIN USER AFTER SUCCESSFUL CONNECTION
-    await createAdminUser();
-    
-  } catch (err) {
-    console.error('❌ MongoDB connection error:', err.message);
-    console.log('Attempting to continue without database...');
-  }
-};
-
-// Function to create admin user
+// Function to create admin user (NON-BLOCKING)
 const createAdminUser = async () => {
   try {
     const User = require('./models/User');
@@ -202,11 +182,33 @@ const createAdminUser = async () => {
     
   } catch (error) {
     console.error('❌ Error creating admin user:', error.message);
+    // Don't throw - just log and continue
   }
 };
 
-// Connect to database and create admin
-connectDB();
+// Connect to database with proper error handling
+mongoose.connect(MONGODB_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  serverSelectionTimeoutMS: 5000,
+  socketTimeoutMS: 45000,
+})
+.then(async () => {
+  console.log('✅ Connected to MongoDB');
+  console.log(`📊 Database: ${MONGODB_URI.split('@').pop() || MONGODB_URI}`);
+  
+  // Try to create admin user, but don't block if it fails
+  try {
+    await createAdminUser();
+  } catch (adminError) {
+    console.error('⚠️  Admin creation failed (non-critical):', adminError.message);
+    // Continue anyway - server should still work
+  }
+})
+.catch(err => {
+  console.error('❌ MongoDB connection error:', err.message);
+  console.log('Attempting to continue without database...');
+});
 
 // Socket.io for real-time features
 io.on('connection', (socket) => {
