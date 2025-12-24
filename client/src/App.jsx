@@ -22,6 +22,10 @@ import Messenger from './pages/Messenger/Messenger';
 import Notifications from './pages/Notifications/Notifications';
 import Settings from './pages/Settings/Settings';
 
+// ADDED: Import verification pages
+import Verification from './pages/Verification/Verification';
+import VerificationManager from './pages/Admin/VerificationManager';
+
 // Admin Pages (if you have it, otherwise use placeholder)
 // import AdminDashboard from './pages/Admin/Dashboard';
 
@@ -35,6 +39,50 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
+        
+        {/* ADDED: Verification Route - Public but requires login */}
+        <Route path="/verification" element={
+          <ProtectedRoute>
+            <Verification />
+          </ProtectedRoute>
+        } />
+        
+        {/* ADDED: Admin Verification Management Route */}
+        <Route path="/admin/verification" element={
+          <ProtectedRoute>
+            <VerificationManager />
+          </ProtectedRoute>
+        } />
+        
+        {/* ADDED: Admin Verification Review Route */}
+        <Route path="/admin/verification/review/:userId" element={
+          <ProtectedRoute>
+            <div style={{ 
+              padding: '40px', 
+              textAlign: 'center',
+              fontFamily: 'Arial, sans-serif' 
+            }}>
+              <h1>🔍 Review Verification Request</h1>
+              <p>This page would show detailed verification request information for admin review.</p>
+              <p><em>Verification review interface coming soon!</em></p>
+              <button 
+                onClick={() => window.location.href = '/admin/verification'}
+                style={{
+                  padding: '10px 20px',
+                  backgroundColor: '#1877f2',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '5px',
+                  cursor: 'pointer',
+                  marginTop: '20px',
+                  marginRight: '10px'
+                }}
+              >
+                Back to Verification Management
+              </button>
+            </div>
+          </ProtectedRoute>
+        } />
         
         {/* Admin Route - Protected */}
         <Route path="/admin" element={
@@ -60,23 +108,46 @@ function App() {
                   <li>Content Moderation</li>
                   <li>Analytics Dashboard</li>
                   <li>System Settings</li>
+                  {/* ADDED: Verification Management to admin features */}
+                  <li>Verification Management</li>
                 </ul>
               </div>
+              {/* ADDED: Quick links for admin */}
+              <div style={{ 
+                marginTop: '20px',
+                display: 'flex',
+                justifyContent: 'center',
+                gap: '10px',
+                flexWrap: 'wrap'
+              }}>
+                <button 
+                  onClick={() => window.location.href = '/admin/verification'}
+                  style={{
+                    padding: '10px 20px',
+                    backgroundColor: '#1877f2',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '5px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Manage Verification
+                </button>
+                <button 
+                  onClick={() => window.location.href = '/home'}
+                  style={{
+                    padding: '10px 20px',
+                    backgroundColor: '#42b72a',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '5px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Back to Home
+                </button>
+              </div>
               <p><em>Admin functionality coming soon!</em></p>
-              <button 
-                onClick={() => window.location.href = '/home'}
-                style={{
-                  padding: '10px 20px',
-                  backgroundColor: '#1877f2',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '5px',
-                  cursor: 'pointer',
-                  marginTop: '20px'
-                }}
-              >
-                Back to Home
-              </button>
             </div>
           </ProtectedRoute>
         } />
@@ -93,6 +164,17 @@ function App() {
             <Route path="/messenger" element={<Messenger />} />
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/settings" element={<Settings />} />
+            
+            {/* ADDED: Verification page also accessible through layout */}
+            <Route path="/get-verified" element={
+              <div style={{ 
+                padding: '20px',
+                maxWidth: '800px',
+                margin: '0 auto'
+              }}>
+                <Verification />
+              </div>
+            } />
           </Route>
         </Route>
         
@@ -101,6 +183,116 @@ function App() {
           path="/" 
           element={
             <Navigate to="/home" replace />
+          } 
+        />
+        
+        {/* ADDED: Verification success redirect route */}
+        <Route 
+          path="/verification/success" 
+          element={
+            <ProtectedRoute>
+              <div style={{ 
+                padding: '40px',
+                textAlign: 'center',
+                fontFamily: 'Arial, sans-serif'
+              }}>
+                <h1>✅ Verification Request Submitted</h1>
+                <p>Your verification request has been successfully submitted!</p>
+                <p>Our team will review your request within 7-10 business days.</p>
+                <div style={{ 
+                  marginTop: '30px',
+                  padding: '20px',
+                  backgroundColor: '#e8f5e9',
+                  borderRadius: '10px',
+                  maxWidth: '500px',
+                  margin: '20px auto'
+                }}>
+                  <h3>What happens next?</h3>
+                  <ul style={{ textAlign: 'left' }}>
+                    <li>You'll receive a notification when your request is reviewed</li>
+                    <li>If approved, the blue verification badge will appear on your profile</li>
+                    <li>If rejected, you'll receive feedback and can reapply after 90 days</li>
+                  </ul>
+                </div>
+                <button 
+                  onClick={() => window.location.href = '/home'}
+                  style={{
+                    padding: '10px 20px',
+                    backgroundColor: '#1877f2',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '5px',
+                    cursor: 'pointer',
+                    marginTop: '20px'
+                  }}
+                >
+                  Return to Home
+                </button>
+              </div>
+            </ProtectedRoute>
+          } 
+        />
+        
+        {/* ADDED: Verification rejected route */}
+        <Route 
+          path="/verification/rejected" 
+          element={
+            <ProtectedRoute>
+              <div style={{ 
+                padding: '40px',
+                textAlign: 'center',
+                fontFamily: 'Arial, sans-serif'
+              }}>
+                <h1>❌ Verification Request Denied</h1>
+                <p>Your verification request was not approved at this time.</p>
+                <p>You may reapply after 90 days.</p>
+                <div style={{ 
+                  marginTop: '30px',
+                  padding: '20px',
+                  backgroundColor: '#ffebee',
+                  borderRadius: '10px',
+                  maxWidth: '500px',
+                  margin: '20px auto'
+                }}>
+                  <h3>Common reasons for rejection:</h3>
+                  <ul style={{ textAlign: 'left' }}>
+                    <li>Insufficient proof of notability</li>
+                    <li>Incomplete profile information</li>
+                    <li>Account doesn't meet minimum activity requirements</li>
+                    <li>Submitted documents were unclear or insufficient</li>
+                  </ul>
+                </div>
+                <div style={{ marginTop: '20px' }}>
+                  <button 
+                    onClick={() => window.location.href = '/verification'}
+                    style={{
+                      padding: '10px 20px',
+                      backgroundColor: '#ff9800',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '5px',
+                      cursor: 'pointer',
+                      marginRight: '10px'
+                    }}
+                  >
+                    Review Requirements
+                  </button>
+                  <button 
+                    onClick={() => window.location.href = '/home'}
+                    style={{
+                      padding: '10px 20px',
+                      backgroundColor: '#1877f2',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '5px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Return to Home
+                  </button>
+                </div>
+              </div>
+            </ProtectedRoute>
           } 
         />
         
@@ -141,6 +333,21 @@ function App() {
                 }}
               >
                 Go to Home
+              </a>
+              {/* ADDED: Verification link to 404 page */}
+              <a 
+                href="/verification" 
+                style={{ 
+                  margin: '10px', 
+                  padding: '10px 20px',
+                  backgroundColor: '#9c27b0',
+                  color: 'white',
+                  textDecoration: 'none',
+                  borderRadius: '5px',
+                  display: 'inline-block'
+                }}
+              >
+                Get Verified
               </a>
             </div>
           </div>
