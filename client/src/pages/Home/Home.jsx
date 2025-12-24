@@ -1,12 +1,14 @@
 // client/src/pages/Home/Home.jsx
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchFeed, clearPosts } from '../../store/slices/postSlice';
-import CreatePost from '../../components/Post/CreatePost';
 import Post from '../../components/Post/Post';
 import StoryCarousel from '../../components/Story/StoryCarousel';
 import LoadingSpinner from '../../components/Common/LoadingSpinner';
 import './Home.css';
+
+// Lazy load CreatePost to avoid duplication
+const CreatePost = lazy(() => import('../../components/Post/CreatePost'));
 
 const Home = () => {
   const [showCreatePost, setShowCreatePost] = useState(false);
@@ -21,6 +23,7 @@ const Home = () => {
 
   // Fetch initial feed
   useEffect(() => {
+    console.log('📡 Home: Fetching feed...');
     dispatch(clearPosts());
     loadFeed(1);
     
@@ -61,13 +64,23 @@ const Home = () => {
   };
 
   const handlePostCreated = () => {
+    console.log('✅ Post created, refreshing feed...');
     dispatch(clearPosts());
     loadFeed(1);
+    setShowCreatePost(false);
   };
 
   return (
     <div className="home-container">
-      {/* User Profile and Create Post */}
+      {/* DEBUG - Remove in production */}
+      <div className="debug-info">
+        <strong>Home Status:</strong>
+        <div>User: {user?.username || 'Loading...'}</div>
+        <div>Posts: {feed?.length || 0}</div>
+        <div>Create Post Modal: {showCreatePost ? 'Open' : 'Closed'}</div>
+      </div>
+      
+      {/* User Profile and Create Post Button */}
       <div className="create-post-section">
         <div className="user-profile-row">
           <img 
@@ -78,10 +91,15 @@ const Home = () => {
           <button 
             className="whats-on-mind"
             onClick={() => setShowCreatePost(true)}
+            type="button"
           >
             What's on your mind, {user?.username}?
           </button>
-          <button className="photo-btn">
+          <button 
+            className="photo-btn"
+            onClick={() => setShowCreatePost(true)}
+            type="button"
+          >
             <i className="fi fi-sr-add-image"></i>
           </button>
         </div>
@@ -105,6 +123,7 @@ const Home = () => {
             <button 
               onClick={() => loadFeed(1)}
               className="retry-btn"
+              type="button"
             >
               Retry
             </button>
@@ -116,7 +135,7 @@ const Home = () => {
             </div>
             <h3>No posts yet</h3>
             <p>Start following people or join groups to see posts in your feed.</p>
-            <button className="explore-btn">Explore WaveNet</button>
+            <button className="explore-btn" type="button">Explore WaveNet</button>
           </div>
         ) : (
           <>
@@ -140,20 +159,16 @@ const Home = () => {
         )}
       </div>
 
-      {/* Create Post Modal */}
+      {/* Create Post Modal - Only shows when clicked */}
       {showCreatePost && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h3>Create Post</h3>
-              <button 
-                className="close-modal"
-                onClick={() => setShowCreatePost(false)}
-              >
-                <i className="fi fi-rr-cross-small"></i>
-              </button>
-            </div>
-            <CreatePost onPostCreated={handlePostCreated} />
+        <div className="modal-overlay" onClick={() => setShowCreatePost(false)}>
+          <div className="modal-container" onClick={(e) => e.stopPropagation()}>
+            <Suspense fallback={<div className="modal-loading">Loading create post...</div>}>
+              <CreatePost 
+                onPostCreated={handlePostCreated}
+                onClose={() => setShowCreatePost(false)}
+              />
+            </Suspense>
           </div>
         </div>
       )}
