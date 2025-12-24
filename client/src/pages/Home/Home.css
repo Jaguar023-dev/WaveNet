@@ -6,23 +6,6 @@
   position: relative;
 }
 
-/* Debug info - remove in production */
-.debug-info {
-  background: #f8f9fa;
-  padding: 10px;
-  border-radius: 8px;
-  margin-bottom: 16px;
-  font-size: 12px;
-  color: #6c757d;
-  border: 1px dashed #dee2e6;
-}
-
-.debug-info strong {
-  color: #495057;
-  display: block;
-  margin-bottom: 4px;
-}
-
 /* Create Post Section */
 .create-post-section {
   background: white;
