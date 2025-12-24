@@ -1,9 +1,9 @@
-// client/src/pages/Auth/Login.jsx
+// client/src/pages/Auth/Login.jsx - FIXED (No Redux)
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
-import { login, clearError } from '../../store/slices/authSlice'; // REMOVED getCurrentUser import
+import axios from 'axios';
 import { Facebook, Twitter, Mail } from 'react-feather';
+import { toast } from 'react-toastify';
 import './Auth.css';
 
 const Login = () => {
@@ -15,51 +15,29 @@ const Login = () => {
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [hasRedirected, setHasRedirected] = useState(false);
 
-  const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
   
-  // Get auth state from Redux
-  const { loading, error, isAuthenticated, user } = useSelector(state => state.auth);
-
   const from = location.state?.from?.pathname || '/home';
 
   // Debug logging
   useEffect(() => {
     console.log('🔑 Login Component State:', {
-      isAuthenticated,
-      user: user ? user.username : 'No user',
-      loading,
-      error,
       from,
-      currentPath: location.pathname,
-      hasRedirected
+      currentPath: location.pathname
     });
-  }, [isAuthenticated, user, loading, error, from, location, hasRedirected]);
 
-  // Handle redirect after authentication (ONLY when user explicitly logs in)
-  useEffect(() => {
-    console.log('🔄 Login useEffect - checking if should redirect');
+    // Check if already logged in
+    const token = localStorage.getItem('token');
+    const user = localStorage.getItem('user');
     
-    // Only redirect if user JUST authenticated (not from existing token)
-    if (isAuthenticated && user && !hasRedirected) {
-      console.log('✅ User authenticated, redirecting to:', from);
-      console.log('👤 User data:', { username: user.username, email: user.email });
-      
-      setHasRedirected(true);
-      
-      // Small delay to ensure everything is ready
-      setTimeout(() => {
-        navigate(from, { replace: true });
-      }, 100);
+    if (token && user) {
+      console.log('👤 Already logged in, redirecting to home');
+      navigate('/home', { replace: true });
     }
     
-    // Clear any previous errors
-    dispatch(clearError());
-    
-    // Check for saved email (but don't auto-login)
+    // Check for saved email
     const savedEmail = localStorage.getItem('rememberedEmail');
     if (savedEmail) {
       setFormData(prev => ({
@@ -69,7 +47,7 @@ const Login = () => {
       }));
       console.log('📧 Pre-filled saved email:', savedEmail);
     }
-  }, [isAuthenticated, user, navigate, from, dispatch, hasRedirected]);
+  }, [navigate, from, location]);
 
   const validateForm = () => {
     const newErrors = {};
@@ -121,7 +99,6 @@ const Login = () => {
     }
     
     setIsSubmitting(true);
-    setHasRedirected(false); // Reset redirect flag
     
     // Save email if remember me is checked
     if (formData.rememberMe) {
@@ -132,24 +109,50 @@ const Login = () => {
     }
     
     try {
-      console.log('📡 Dispatching login action...');
-      const result = await dispatch(login({
+      console.log('📡 Sending login request to API...');
+      
+      // API URL - adjust based on your environment
+      const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      
+      const response = await axios.post(`${API_URL}/auth/login`, {
         email: formData.email,
         password: formData.password
-      })).unwrap();
-      
-      console.log('✅ Login successful! Result:', {
-        user: result.user?.username,
-        accessToken: result.accessToken ? 'Yes' : 'No',
-        refreshToken: result.refreshToken ? 'Yes' : 'No'
       });
       
-      // The authSlice will update Redux state and localStorage
-      // The useEffect above will handle the redirect
+      console.log('✅ Login successful! Response:', response.data);
+      
+      // Save token and user data to localStorage
+      localStorage.setItem('token', response.data.token);
+      localStorage.setItem('user', JSON.stringify(response.data.user));
+      
+      // Show success message
+      toast.success('Login successful!');
+      
+      // Redirect to the intended page
+      console.log('🔄 Redirecting to:', from);
+      navigate(from, { replace: true });
       
     } catch (error) {
       console.error('❌ Login failed:', error);
-      setHasRedirected(false); // Allow retry
+      
+      let errorMessage = 'Login failed';
+      
+      if (error.response) {
+        // Server responded with error
+        console.log('Server error response:', error.response.data);
+        errorMessage = error.response.data.message || 'Invalid email or password';
+      } else if (error.request) {
+        // Request was made but no response
+        console.log('No response from server:', error.request);
+        errorMessage = 'Cannot connect to server. Please check your internet connection.';
+      }
+      
+      toast.error(errorMessage);
+      
+      // Show error in form
+      if (error.response?.data?.field) {
+        setErrors({ [error.response.data.field]: errorMessage });
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -166,10 +169,10 @@ const Login = () => {
   };
 
   const handleTestLogin = () => {
-    console.log('🧪 Test login clicked');
+    console.log('🧪 Test login clicked - using admin credentials');
     setFormData({
-      email: 'test@example.com',
-      password: 'password123',
+      email: 'admin@wavenet.com',
+      password: 'WaveNet@support1411',
       rememberMe: false
     });
   };
@@ -188,12 +191,12 @@ const Login = () => {
             borderLeft: '4px solid #1877f2'
           }}>
             <strong>Debug Info:</strong>
-            <div>Auth State: {isAuthenticated ? '✅ Authenticated' : '❌ Not authenticated'}</div>
-            <div>User: {user ? user.username : 'None'}</div>
-            <div>Token in localStorage: {localStorage.getItem('token') ? 'Present' : 'Missing'}</div>
-            <div>Loading: {loading ? 'Yes' : 'No'}</div>
-            <div>Redirect Attempted: {hasRedirected ? 'Yes' : 'No'}</div>
-            <div>Target: {from}</div>
+            <div>Token in localStorage: {localStorage.getItem('token') ? '✅ Present' : '❌ Missing'}</div>
+            <div>User in localStorage: {localStorage.getItem('user') ? '✅ Present' : '❌ Missing'}</div>
+            <div>Target page: {from}</div>
+            <div style={{ marginTop: '5px', color: '#666' }}>
+              Test: admin@wavenet.com / WaveNet@support1411
+            </div>
           </div>
         )}
 
@@ -255,13 +258,6 @@ const Login = () => {
 
         {/* Login Form */}
         <form onSubmit={handleSubmit} className="auth-form">
-          {error && (
-            <div className="alert alert-error">
-              <span className="alert-icon">⚠️</span>
-              <span>{error}</span>
-            </div>
-          )}
-          
           <div className="form-group">
             <label htmlFor="email" className="form-label">
               Email Address
@@ -342,9 +338,9 @@ const Login = () => {
           <button
             type="submit"
             className="auth-btn primary"
-            disabled={isSubmitting || loading}
+            disabled={isSubmitting}
           >
-            {isSubmitting || loading ? (
+            {isSubmitting ? (
               <>
                 <span className="spinner"></span>
                 Logging in...
@@ -362,7 +358,7 @@ const Login = () => {
               className="auth-btn secondary"
               style={{ marginTop: '10px', fontSize: '12px', padding: '8px' }}
             >
-              🧪 Fill Test Credentials
+              🧪 Fill Admin Credentials
             </button>
           )}
         </form>
@@ -401,68 +397,6 @@ const Login = () => {
           </a>
         </div>
       </div>
-      
-      {/* Clear localStorage button for testing */}
-      {process.env.NODE_ENV === 'development' && (
-        <div style={{
-          position: 'fixed',
-          bottom: '10px',
-          right: '10px',
-          background: '#2d3436',
-          color: 'white',
-          padding: '10px',
-          borderRadius: '5px',
-          fontSize: '11px',
-          maxWidth: '300px',
-          zIndex: 1000
-        }}>
-          <strong>Auth Debug:</strong>
-          <div>Status: {isAuthenticated ? '✅ Logged In' : '❌ Not Logged In'}</div>
-          <div>User: {user ? user.username : 'None'}</div>
-          <div>Token in localStorage: {localStorage.getItem('token') ? 'Present' : 'Missing'}</div>
-          <div>Loading: {loading ? 'Yes' : 'No'}</div>
-          
-          <div style={{ marginTop: '10px', display: 'flex', gap: '5px' }}>
-            <button 
-              onClick={() => {
-                console.log('Checking localStorage...');
-                console.log('Token:', localStorage.getItem('token'));
-                console.log('Remembered Email:', localStorage.getItem('rememberedEmail'));
-              }}
-              style={{
-                background: '#2ecc71',
-                color: 'white',
-                border: 'none',
-                padding: '5px',
-                borderRadius: '3px',
-                cursor: 'pointer',
-                fontSize: '10px'
-              }}
-            >
-              Check Storage
-            </button>
-            
-            <button 
-              onClick={() => {
-                localStorage.clear();
-                console.log('✅ LocalStorage cleared');
-                window.location.reload();
-              }}
-              style={{
-                background: '#e74c3c',
-                color: 'white',
-                border: 'none',
-                padding: '5px',
-                borderRadius: '3px',
-                cursor: 'pointer',
-                fontSize: '10px'
-              }}
-            >
-              Clear Storage & Reload
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
