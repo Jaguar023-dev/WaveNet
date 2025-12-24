@@ -19,14 +19,13 @@ const Home = () => {
   const [page, setPage] = useState(1);
   
   const dispatch = useDispatch();
-  const navigate = useNavigate(); // Add navigate hook
+  const navigate = useNavigate();
   const { feed, loading, error } = useSelector(state => state.posts);
   const { user } = useSelector(state => state.auth);
   const feedRef = useRef(null);
 
   // Fetch initial feed
   useEffect(() => {
-    console.log('📡 Home: Fetching feed...');
     dispatch(clearPosts());
     loadFeed(1);
     
@@ -67,7 +66,6 @@ const Home = () => {
   };
 
   const handlePostCreated = () => {
-    console.log('✅ Post created, refreshing feed...');
     dispatch(clearPosts());
     loadFeed(1);
     setShowCreatePost(false);
@@ -76,23 +74,12 @@ const Home = () => {
   // Handle profile click
   const handleProfileClick = () => {
     if (user?._id) {
-      console.log('👤 Navigating to profile:', user._id);
       navigate(`/profile/${user._id}`);
-    } else {
-      console.error('No user ID found');
     }
   };
 
   return (
     <div className="home-container">
-      {/* DEBUG - Remove in production */}
-      <div className="debug-info">
-        <strong>Home Status:</strong>
-        <div>User: {user?.username || 'Loading...'}</div>
-        <div>Posts: {feed?.length || 0}</div>
-        <div>Create Post Modal: {showCreatePost ? 'Open' : 'Closed'}</div>
-      </div>
-      
       {/* User Profile and Create Post Button */}
       <div className="create-post-section">
         <div className="user-profile-row">
