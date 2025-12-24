@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { login, clearError } from '../../store/slices/authSlice'; // REMOVED getCurrentUser import
+import { login, clearError, getCurrentUser } from '../../store/slices/authSlice';
 import { Facebook, Twitter, Mail } from 'react-feather';
 import './Auth.css';
 
@@ -22,7 +22,7 @@ const Login = () => {
   const location = useLocation();
   
   // Get auth state from Redux
-  const { loading, error, isAuthenticated, user } = useSelector(state => state.auth);
+  const { loading, error, isAuthenticated, user, token } = useSelector(state => state.auth);
 
   const from = location.state?.from?.pathname || '/home';
 
@@ -31,19 +31,43 @@ const Login = () => {
     console.log('🔑 Login Component State:', {
       isAuthenticated,
       user: user ? user.username : 'No user',
+      token: token ? `Yes (${token?.substring(0, 20)}...)` : 'No',
       loading,
       error,
       from,
       currentPath: location.pathname,
       hasRedirected
     });
-  }, [isAuthenticated, user, loading, error, from, location, hasRedirected]);
+  }, [isAuthenticated, user, token, loading, error, from, location, hasRedirected]);
 
-  // Handle redirect after authentication (ONLY when user explicitly logs in)
+  // Check if user is already authenticated
+  useEffect(() => {
+    const checkExistingAuth = async () => {
+      console.log('🔄 Login: Checking existing authentication');
+      
+      const storedToken = localStorage.getItem('token');
+      console.log('🔍 Token in localStorage:', storedToken ? `Yes (${storedToken.substring(0, 20)}...)` : 'No');
+      
+      // If we have a token but no user in Redux, fetch user
+      if (storedToken && !user) {
+        console.log('📡 Fetching user with existing token...');
+        try {
+          const result = await dispatch(getCurrentUser()).unwrap();
+          console.log('✅ Existing auth valid:', result.user?.username);
+        } catch (error) {
+          console.log('❌ Existing token invalid:', error);
+          localStorage.removeItem('token');
+        }
+      }
+    };
+    
+    checkExistingAuth();
+  }, [dispatch, user]);
+
+  // Handle redirect after authentication
   useEffect(() => {
     console.log('🔄 Login useEffect - checking if should redirect');
     
-    // Only redirect if user JUST authenticated (not from existing token)
     if (isAuthenticated && user && !hasRedirected) {
       console.log('✅ User authenticated, redirecting to:', from);
       console.log('👤 User data:', { username: user.username, email: user.email });
@@ -59,7 +83,7 @@ const Login = () => {
     // Clear any previous errors
     dispatch(clearError());
     
-    // Check for saved email (but don't auto-login)
+    // Check for saved email
     const savedEmail = localStorage.getItem('rememberedEmail');
     if (savedEmail) {
       setFormData(prev => ({
@@ -67,7 +91,6 @@ const Login = () => {
         email: savedEmail,
         rememberMe: true
       }));
-      console.log('📧 Pre-filled saved email:', savedEmail);
     }
   }, [isAuthenticated, user, navigate, from, dispatch, hasRedirected]);
 
@@ -144,12 +167,63 @@ const Login = () => {
         refreshToken: result.refreshToken ? 'Yes' : 'No'
       });
       
-      // The authSlice will update Redux state and localStorage
-      // The useEffect above will handle the redirect
+      // OPTION 1: Immediate redirect (more reliable)
+      if (result.user && result.accessToken) {
+        console.log('🚀 Immediate redirect to /home');
+        
+        // Store token in localStorage (already done in authSlice, but just in case)
+        if (result.accessToken) {
+          localStorage.setItem('token', result.accessToken);
+          console.log('💾 Token stored in localStorage');
+        }
+        
+        // Wait a moment for Redux state to update, then redirect
+        setTimeout(() => {
+          console.log('📍 Navigating to /home');
+          navigate('/home', { replace: true });
+        }, 50);
+      }
       
     } catch (error) {
       console.error('❌ Login failed:', error);
       setHasRedirected(false); // Allow retry
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Alternative: Direct login with immediate Home call (hard redirect)
+  const handleDirectLogin = async () => {
+    try {
+      setIsSubmitting(true);
+      
+      // Validate
+      const validationErrors = validateForm();
+      if (Object.keys(validationErrors).length > 0) {
+        setErrors(validationErrors);
+        return;
+      }
+      
+      // Dispatch login
+      const result = await dispatch(login({
+        email: formData.email,
+        password: formData.password
+      })).unwrap();
+      
+      console.log('✅ Direct login successful');
+      
+      // Force immediate hard redirect
+      if (result.accessToken) {
+        console.log('🎯 Forcing hard redirect to /home');
+        
+        // Give Redux a moment to update state
+        setTimeout(() => {
+          window.location.href = '/home';
+        }, 100);
+      }
+      
+    } catch (error) {
+      console.error('Login error:', error);
     } finally {
       setIsSubmitting(false);
     }
@@ -174,6 +248,22 @@ const Login = () => {
     });
   };
 
+  // Quick login test button (for development only)
+  const handleQuickTest = async () => {
+    console.log('⚡ Quick test login');
+    setFormData({
+      email: 'test@example.com',
+      password: 'password123',
+      rememberMe: false
+    });
+    
+    // Auto-submit after a brief delay
+    setTimeout(() => {
+      const submitEvent = new Event('submit', { bubbles: true });
+      e?.target?.form?.dispatchEvent(submitEvent);
+    }, 100);
+  };
+
   return (
     <div className="auth-container">
       <div className="auth-card">
@@ -190,6 +280,7 @@ const Login = () => {
             <strong>Debug Info:</strong>
             <div>Auth State: {isAuthenticated ? '✅ Authenticated' : '❌ Not authenticated'}</div>
             <div>User: {user ? user.username : 'None'}</div>
+            <div>Token in Redux: {token ? 'Present' : 'Missing'}</div>
             <div>Token in localStorage: {localStorage.getItem('token') ? 'Present' : 'Missing'}</div>
             <div>Loading: {loading ? 'Yes' : 'No'}</div>
             <div>Redirect Attempted: {hasRedirected ? 'Yes' : 'No'}</div>
@@ -354,16 +445,44 @@ const Login = () => {
             )}
           </button>
           
-          {/* Test button - for development only */}
+          {/* Alternative direct login button */}
+          <button
+            type="button"
+            onClick={handleDirectLogin}
+            className="auth-btn secondary"
+            style={{ marginTop: '10px' }}
+            disabled={isSubmitting || loading}
+          >
+            🚀 Login & Go Directly to Home
+          </button>
+          
+          {/* Test buttons - for development only */}
           {process.env.NODE_ENV === 'development' && (
-            <button
-              type="button"
-              onClick={handleTestLogin}
-              className="auth-btn secondary"
-              style={{ marginTop: '10px', fontSize: '12px', padding: '8px' }}
-            >
-              🧪 Fill Test Credentials
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={handleTestLogin}
+                className="auth-btn secondary"
+                style={{ marginTop: '10px', fontSize: '12px', padding: '8px' }}
+              >
+                🧪 Fill Test Credentials
+              </button>
+              
+              <button
+                type="button"
+                onClick={handleQuickTest}
+                className="auth-btn secondary"
+                style={{ 
+                  marginTop: '10px', 
+                  fontSize: '12px', 
+                  padding: '8px',
+                  backgroundColor: '#e74c3c',
+                  color: 'white'
+                }}
+              >
+                ⚡ Quick Test Login
+              </button>
+            </>
           )}
         </form>
 
@@ -402,7 +521,7 @@ const Login = () => {
         </div>
       </div>
       
-      {/* Clear localStorage button for testing */}
+      {/* Debug panel - for development only */}
       {process.env.NODE_ENV === 'development' && (
         <div style={{
           position: 'fixed',
@@ -421,8 +540,27 @@ const Login = () => {
           <div>User: {user ? user.username : 'None'}</div>
           <div>Token in localStorage: {localStorage.getItem('token') ? 'Present' : 'Missing'}</div>
           <div>Loading: {loading ? 'Yes' : 'No'}</div>
+          <div>Submitting: {isSubmitting ? 'Yes' : 'No'}</div>
           
           <div style={{ marginTop: '10px', display: 'flex', gap: '5px' }}>
+            <button 
+              onClick={() => {
+                console.log('Manual redirect to /home');
+                navigate('/home');
+              }}
+              style={{
+                background: '#3498db',
+                color: 'white',
+                border: 'none',
+                padding: '5px',
+                borderRadius: '3px',
+                cursor: 'pointer',
+                fontSize: '10px'
+              }}
+            >
+              Manual Redirect
+            </button>
+            
             <button 
               onClick={() => {
                 console.log('Checking localStorage...');
@@ -445,7 +583,6 @@ const Login = () => {
             <button 
               onClick={() => {
                 localStorage.clear();
-                console.log('✅ LocalStorage cleared');
                 window.location.reload();
               }}
               style={{
@@ -458,7 +595,7 @@ const Login = () => {
                 fontSize: '10px'
               }}
             >
-              Clear Storage & Reload
+              Clear & Reload
             </button>
           </div>
         </div>
