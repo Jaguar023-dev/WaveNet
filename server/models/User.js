@@ -69,7 +69,7 @@ const userSchema = new mongoose.Schema({
   verificationRequest: {
     status: {
       type: String,
-      enum: ['pending', 'approved', 'rejected', 'not_requested'],
+      enum: ['pending', 'approved','none', 'rejected', 'not_requested'],
       default: 'not_requested'
     },
     submittedAt: Date,
