@@ -436,3 +436,113 @@
 .view-all-comments:hover {
   text-decoration: underline;
 }
+
+
+/* Add to client/src/components/Post/Post.css */
+
+/* Verified Badge Styles */
+.verified-badge {
+  display: inline-flex;
+  align-items: center;
+  color: #1877f2;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+
+.verified-badge svg {
+  filter: drop-shadow(0 1px 1px rgba(0,0,0,0.1));
+}
+
+/* Update post username wrapper to include badge */
+.post-user-name-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.post-username {
+  margin: 0;
+  font-weight: 600;
+  font-size: 15px;
+  color: #050505;
+}
+
+/* Update comment user wrapper */
+.comment-user-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.comment-username {
+  font-weight: 600;
+  font-size: 13px;
+  color: #050505;
+}
+
+/* Hover effect for verified badge */
+.verified-badge:hover {
+  color: #166fe5;
+}
+
+/* Ensure badge is properly aligned in post header */
+.post-user-info {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Adjust spacing for post meta */
+.post-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+  font-size: 13px;
+  color: #65676b;
+}
+
+.post-time,
+.post-privacy,
+.post-location {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/* Tooltip for verified badge */
+.verified-badge[title] {
+  position: relative;
+  cursor: help;
+}
+
+.verified-badge[title]:hover::after {
+  content: attr(title);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  z-index: 1000;
+  margin-bottom: 5px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .verified-badge svg {
+    width: 14px;
+    height: 14px;
+  }
+  
+  .post-username {
+    font-size: 14px;
+  }
+  
+  .comment-username {
+    font-size: 12px;
+  }
+}
