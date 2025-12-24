@@ -14,7 +14,8 @@ import {
   ChevronDown,
   Settings,
   HelpCircle,
-  Shield // ADD THIS IMPORT
+  Shield,
+  CheckCircle // ADDED: For verified badge
 } from 'react-feather';
 
 const Sidebar = ({ user }) => {
@@ -48,7 +49,15 @@ const Sidebar = ({ user }) => {
             className="sidebar-avatar"
           />
           <div className="user-info">
-            <h4 className="user-name">{user?.username}</h4>
+            <h4 className="user-name">
+              {user?.username}
+              {/* ADDED: Verified badge next to username */}
+              {user?.isVerified && (
+                <span className="sidebar-verified-badge" title="Verified Account">
+                  <CheckCircle size={14} />
+                </span>
+              )}
+            </h4>
             <p className="user-bio">{user?.profile?.bio || 'Welcome to WaveNet!'}</p>
           </div>
         </div>
@@ -67,6 +76,25 @@ const Sidebar = ({ user }) => {
               )}
             </Link>
           ))}
+          
+          {/* ADDED: Verification menu item */}
+          {user?.isVerified ? (
+            <div className="menu-item verified-item" title="You are verified">
+              <span className="menu-icon">
+                <CheckCircle size={24} />
+              </span>
+              <span className="menu-label">Verified Account</span>
+              <span className="verified-badge-menu">✓</span>
+            </div>
+          ) : (
+            <Link to="/verification" className="menu-item verification-item">
+              <span className="menu-icon">
+                <Shield size={24} />
+              </span>
+              <span className="menu-label">Get Verified</span>
+              <span className="verification-badge">New</span>
+            </Link>
+          )}
           
           {/* ADMIN PANEL LINK - Only show for admins */}
           {(user?.role === 'admin' || user?.role === 'super_admin') && (
@@ -101,6 +129,15 @@ const Sidebar = ({ user }) => {
               <span className="shortcut-name">{shortcut.name}</span>
             </Link>
           ))}
+          
+          {/* ADDED: Verification shortcut for non-verified users */}
+          {!user?.isVerified && (
+            <Link to="/verification" className="shortcut-item verification-shortcut">
+              <span className="shortcut-icon">✅</span>
+              <span className="shortcut-name">Get Verified</span>
+              <span className="shortcut-badge">New</span>
+            </Link>
+          )}
         </div>
       </div>
 
@@ -122,6 +159,12 @@ const Sidebar = ({ user }) => {
             <Heart size={18} />
             <span>Send Feedback</span>
           </Link>
+          
+          {/* ADDED: Verification help link */}
+          <Link to="/verification/help" className="help-link verification-help">
+            <CheckCircle size={18} />
+            <span>Verification Help</span>
+          </Link>
         </div>
       </div>
 
@@ -134,6 +177,9 @@ const Sidebar = ({ user }) => {
           <a href="/advertising">Advertising</a>
           <span>·</span>
           <a href="/cookies">Cookies</a>
+          {/* ADDED: Verification link in footer */}
+          <span>·</span>
+          <a href="/verification">Verification</a>
         </div>
         <p className="copyright">WaveNet © {new Date().getFullYear()}</p>
       </div>
