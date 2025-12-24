@@ -1,3 +1,4 @@
+// client/src/components/Layout/Sidebar.jsx
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { 
@@ -12,7 +13,8 @@ import {
   Clock,
   ChevronDown,
   Settings,
-  HelpCircle
+  HelpCircle,
+  Shield // ADD THIS IMPORT
 } from 'react-feather';
 
 const Sidebar = ({ user }) => {
@@ -65,6 +67,17 @@ const Sidebar = ({ user }) => {
               )}
             </Link>
           ))}
+          
+          {/* ADMIN PANEL LINK - Only show for admins */}
+          {(user?.role === 'admin' || user?.role === 'super_admin') && (
+            <Link to="/admin" className="menu-item admin-item">
+              <span className="menu-icon">
+                <Shield size={24} />
+              </span>
+              <span className="menu-label">Admin Panel</span>
+              <span className="admin-badge">Admin</span>
+            </Link>
+          )}
           
           <button className="menu-item see-more">
             <span className="menu-icon">
