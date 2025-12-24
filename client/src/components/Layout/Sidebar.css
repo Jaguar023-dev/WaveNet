@@ -1,3 +1,4 @@
+/* client/src/components/Layout/Sidebar.css */
 .left-sidebar {
   width: 280px;
   min-width: 280px;
@@ -45,6 +46,15 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.user-name-container {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .user-bio {
@@ -113,6 +123,32 @@
   background: #1b74e4;
   color: white;
   border-radius: 10px;
+}
+
+/* Admin Panel item styling */
+.admin-item {
+  position: relative;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+  border-left: 3px solid #3b82f6;
+}
+
+.admin-item:hover {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(139, 92, 246, 0.15) 100%);
+}
+
+.admin-item .menu-icon {
+  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+  color: white;
+}
+
+.admin-badge {
+  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+  margin-left: auto;
 }
 
 .see-more {
@@ -241,4 +277,90 @@
 .copyright {
   font-size: 12px;
   margin: 0;
+}
+
+/* Verified badge styling for user card */
+.verified-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 8px;
+  color: #3b82f6;
+  background: rgba(59, 130, 246, 0.1);
+  padding: 2px 6px;
+  border-radius: 12px;
+  font-size: 11px;
+  gap: 4px;
+}
+
+.verified-badge svg {
+  width: 12px;
+  height: 12px;
+}
+
+/* Scrollbar styling */
+.left-sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.left-sidebar::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.left-sidebar::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.left-sidebar::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .left-sidebar {
+    width: 240px;
+    min-width: 240px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .left-sidebar {
+    display: none; /* Hide sidebar on mobile or use hamburger menu */
+  }
+}
+
+/* Active menu item indicator */
+.menu-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 0;
+  background: #1b74e4;
+  border-radius: 0 2px 2px 0;
+  transition: height 0.2s ease;
+}
+
+.menu-item.active::before {
+  height: 20px;
+}
+
+/* Admin item special indicator */
+.admin-item::before {
+  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+}
+
+/* Hide some elements on smaller screens */
+@media (max-width: 768px) {
+  .menu-badge,
+  .admin-badge {
+    display: none;
+  }
+  
+  .menu-label {
+    font-size: 14px;
+  }
 }
