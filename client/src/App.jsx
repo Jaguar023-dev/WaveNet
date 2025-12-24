@@ -1,95 +1,81 @@
-// client/src/App.jsx - Add admin route
-import React, { useEffect } from 'react';
+// client/src/App.jsx
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
-import { getCurrentUser } from './store/slices/authSlice';
+import { Provider } from 'react-redux';
+import { store } from './store';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
-// Layout
+// Layout Components
 import Layout from './components/Layout/Layout';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
 
 // Pages
 import Home from './pages/Home/Home';
+import Login from './pages/Auth/Login';
+import Register from './pages/Auth/Register';
 import Profile from './pages/Profile/Profile';
 import Friends from './pages/Friends/Friends';
 import Groups from './pages/Groups/Groups';
+import Watch from './pages/Watch/Watch';
+import Marketplace from './pages/Marketplace/Marketplace';
 import Messenger from './pages/Messenger/Messenger';
 import Notifications from './pages/Notifications/Notifications';
-import Marketplace from './pages/Marketplace/Marketplace';
-import Watch from './pages/Watch/Watch';
 import Settings from './pages/Settings/Settings';
-import Login from './pages/Auth/Login';
-import Register from './pages/Auth/Register';
-import ForgotPassword from './pages/Auth/ForgotPassword';
-
-// Admin Pages
-import AdminDashboard from './pages/Admin/Dashboard';
-
-// Loading
-import LoadingSpinner from './components/Common/LoadingSpinner';
 
 function App() {
-  const dispatch = useDispatch();
-  const { loading, isAuthenticated, user } = useSelector(state => state.auth);
-
-  useEffect(() => {
-    dispatch(getCurrentUser());
-  }, [dispatch]);
-
-  if (loading) {
-    return (
-      <div className="app-loading">
-        <LoadingSpinner text="Loading WaveNet..." />
-      </div>
-    );
-  }
-
+  console.log('🚀 App component rendering');
+  
   return (
-    <Router>
-      <Routes>
-        {/* Auth Routes */}
-        <Route path="/login" element={
-          isAuthenticated ? <Navigate to="/" /> : <Login />
-        } />
-        <Route path="/register" element={
-          isAuthenticated ? <Navigate to="/" /> : <Register />
-        } />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-
-        {/* Admin Route - Separate from main layout */}
-        <Route path="/admin/*" element={
-          <ProtectedRoute>
-            <AdminDashboard />
-          </ProtectedRoute>
-        } />
-
-        {/* Main App Routes */}
-        <Route path="/" element={
-          <ProtectedRoute>
-            <Layout />
-          </ProtectedRoute>
-        }>
-          <Route index element={<Home />} />
-          <Route path="profile/:id" element={<Profile />} />
-          <Route path="friends" element={<Friends />} />
-          <Route path="groups" element={<Groups />} />
-          <Route path="messenger" element={<Messenger />} />
-          <Route path="notifications" element={<Notifications />} />
-          <Route path="marketplace" element={<Marketplace />} />
-          <Route path="watch" element={<Watch />} />
-          <Route path="settings" element={<Settings />} />
-        </Route>
-
-        {/* 404 Route */}
-        <Route path="*" element={
-          <div className="page-404">
-            <h1>404 - Page Not Found</h1>
-            <p>The page you're looking for doesn't exist.</p>
-            <a href="/">Go back home</a>
-          </div>
-        } />
-      </Routes>
-    </Router>
+    <Provider store={store}>
+      <Router>
+        <Routes>
+          {/* Public Routes - No Layout */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          
+          {/* Protected Routes with Layout */}
+          <Route element={<ProtectedRoute />}>
+            <Route element={<Layout />}>
+              <Route path="/home" element={<Home />} />
+              <Route path="/profile/:id" element={<Profile />} />
+              <Route path="/friends" element={<Friends />} />
+              <Route path="/groups" element={<Groups />} />
+              <Route path="/watch" element={<Watch />} />
+              <Route path="/marketplace" element={<Marketplace />} />
+              <Route path="/messenger" element={<Messenger />} />
+              <Route path="/notifications" element={<Notifications />} />
+              <Route path="/settings" element={<Settings />} />
+            </Route>
+          </Route>
+          
+          {/* Redirect root to /home if authenticated, /login if not */}
+          <Route 
+            path="/" 
+            element={
+              <Navigate to="/home" replace />
+            } 
+          />
+          
+          {/* Fallback route */}
+          <Route path="*" element={
+            <div style={{ 
+              padding: '40px',
+              textAlign: 'center',
+              fontFamily: 'Arial, sans-serif'
+            }}>
+              <h1>404 - Page Not Found</h1>
+              <p>The page you're looking for doesn't exist.</p>
+              <div style={{ marginTop: '20px' }}>
+                <a href="/login" style={{ margin: '10px', color: '#1877f2' }}>Go to Login</a>
+                <a href="/" style={{ margin: '10px', color: '#1877f2' }}>Go to Home</a>
+              </div>
+            </div>
+          } />
+        </Routes>
+        <ToastContainer position="top-right" autoClose={3000} />
+      </Router>
+    </Provider>
   );
 }
 
