@@ -1,6 +1,7 @@
 // client/src/pages/Home/Home.jsx
 import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import { Image } from 'react-feather';
 import { fetchFeed, clearPosts } from '../../store/slices/postSlice';
 import Post from '../../components/Post/Post';
 import StoryCarousel from '../../components/Story/StoryCarousel';
@@ -100,7 +101,7 @@ const Home = () => {
             onClick={() => setShowCreatePost(true)}
             type="button"
           >
-            <i className="fi fi-sr-add-image"></i>
+            <Image size={20} />
           </button>
         </div>
       </div>
@@ -131,7 +132,7 @@ const Home = () => {
         ) : feed.length === 0 ? (
           <div className="empty-feed">
             <div className="empty-illustration">
-              <i className="fi fi-ts-newspaper"></i>
+              <div className="newspaper-icon">📰</div>
             </div>
             <h3>No posts yet</h3>
             <p>Start following people or join groups to see posts in your feed.</p>
