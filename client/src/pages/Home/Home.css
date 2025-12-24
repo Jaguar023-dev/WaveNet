@@ -5,6 +5,25 @@
   flex-direction: column;
   gap: 16px;
   width: 100%;
+  position: relative;
+}
+
+/* Debug Info - Remove in production */
+.debug-info {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 10px;
+  border-radius: 5px;
+  font-size: 12px;
+  z-index: 9999;
+  max-width: 200px;
+}
+
+.debug-info div {
+  margin: 3px 0;
 }
 
 /* Create Post Section */
@@ -27,6 +46,7 @@
   border-radius: 50%;
   object-fit: cover;
   border: 2px solid #1877f2;
+  flex-shrink: 0;
 }
 
 .whats-on-mind {
@@ -41,6 +61,7 @@
   cursor: pointer;
   transition: background-color 0.2s;
   font-family: inherit;
+  outline: none;
 }
 
 .whats-on-mind:hover {
@@ -60,6 +81,7 @@
   align-items: center;
   justify-content: center;
   transition: all 0.2s;
+  flex-shrink: 0;
 }
 
 .photo-btn:hover {
@@ -94,6 +116,7 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+  margin-bottom: 40px;
 }
 
 /* Error Message */
@@ -109,6 +132,7 @@
   color: #65676b;
   margin-bottom: 20px;
   font-size: 15px;
+  line-height: 1.5;
 }
 
 .retry-btn {
@@ -209,7 +233,7 @@
   margin: 0;
 }
 
-/* Modal */
+/* Modal Styles */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -220,65 +244,25 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 10000;
   padding: 20px;
 }
 
-.modal-content {
-  background: white;
-  border-radius: 12px;
+.modal-container {
   width: 100%;
   max-width: 500px;
   max-height: 90vh;
-  overflow-y: auto;
-  animation: modalSlideIn 0.3s ease-out;
-}
-
-@keyframes modalSlideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px;
-  border-bottom: 1px solid #e4e6eb;
-}
-
-.modal-header h3 {
-  font-size: 18px;
-  font-weight: 700;
-  color: #050505;
-  margin: 0;
-}
-
-.close-modal {
-  background: none;
-  border: none;
-  color: #65676b;
-  font-size: 20px;
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 50%;
-  width: 32px;
-  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.2s;
-  line-height: 1;
 }
 
-.close-modal:hover {
-  background: #f0f2f5;
+.modal-loading {
+  background: white;
+  padding: 40px;
+  border-radius: 12px;
+  text-align: center;
+  color: #65676b;
 }
 
 /* Responsive */
@@ -314,13 +298,55 @@
     padding: 20px 16px;
   }
   
-  .modal-content {
-    max-width: 100%;
-    max-height: 100vh;
-    border-radius: 0;
-  }
-  
   .modal-overlay {
     padding: 0;
+    background: rgba(0, 0, 0, 0.8);
+  }
+  
+  .modal-container {
+    max-width: 100%;
+    max-height: 100vh;
+  }
+  
+  .debug-info {
+    display: none; /* Hide debug on mobile */
+  }
+}
+
+@media (max-width: 480px) {
+  .home-container {
+    gap: 12px;
+  }
+  
+  .create-post-section {
+    padding: 10px;
+  }
+  
+  .profile-pic-small {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .whats-on-mind {
+    font-size: 13px;
+    padding: 6px 10px;
+  }
+  
+  .photo-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+  }
+  
+  .stories-section {
+    padding: 10px;
+  }
+  
+  .empty-feed h3 {
+    font-size: 16px;
+  }
+  
+  .empty-feed p {
+    font-size: 14px;
   }
 }
