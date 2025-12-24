@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import AdminSidebar from '../../components/Admin/AdminSidebar';
 import AdminHeader from '../../components/Admin/AdminHeader';
 import DashboardStats from '../../components/Admin/DashboardStats';
-import './AdminDashboard.css';
+import './Admin/Dashboard.css';
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
