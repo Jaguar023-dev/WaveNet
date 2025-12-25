@@ -4,7 +4,7 @@ import { useSelector } from 'react-redux';
 import { 
   Image, Video, Smile, MapPin, Calendar, 
   Globe, Users, Lock, X, ChevronDown,
-  Video as VideoIcon, FileText, Poll, 
+  Video as VideoIcon, FileText, PieChart, 
   Camera, Music, Gift
 } from 'react-feather';
 import { PostStorage } from '../../utils/PostStorage';
@@ -252,7 +252,7 @@ const CreatePost = ({ onPostCreated }) => {
                 <Calendar size={20} />
               </button>
               <button type="button" className="add-option">
-                <Poll size={20} />
+                <PieChart size={20} />
               </button>
             </div>
           </div>
