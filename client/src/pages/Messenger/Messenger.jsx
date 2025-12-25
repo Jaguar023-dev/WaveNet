@@ -3,8 +3,7 @@ import { useSelector } from 'react-redux';
 import { 
   Send, Paperclip, Smile, Video, Phone, MoreVertical, Search, 
   Image as ImageIcon, Mic, X, Camera, MapPin, File, Calendar,
-  Check, CheckCheck, Reply, Trash2, Edit2, Heart, ThumbsUp,
-  Frown, Laugh, Angry, Surprise
+  Check, CheckCheck, Trash2, Edit2, Heart, ThumbsUp
 } from 'react-feather';
 import MessageService from '../../services/MessageService';
 import './Messenger.css';
@@ -30,14 +29,14 @@ const Messenger = () => {
   const { user } = useSelector(state => state.auth || {});
   const currentUser = user || MessageService.getCurrentUser();
 
-  // Available emojis for reactions
+  // Available emojis for reactions - use string emojis
   const reactionEmojis = [
-    { emoji: '❤️', label: 'Heart', component: <Heart size={16} /> },
-    { emoji: '👍', label: 'Like', component: <ThumbsUp size={16} /> },
-    { emoji: '😂', label: 'Laugh', component: <Laugh size={16} /> },
-    { emoji: '😮', label: 'Wow', component: <Surprise size={16} /> },
-    { emoji: '😢', label: 'Sad', component: <Frown size={16} /> },
-    { emoji: '😠', label: 'Angry', component: <Angry size={16} /> }
+    { emoji: '❤️', label: 'Heart' },
+    { emoji: '👍', label: 'Like' },
+    { emoji: '😂', label: 'Laugh' },
+    { emoji: '😮', label: 'Wow' },
+    { emoji: '😢', label: 'Sad' },
+    { emoji: '😠', label: 'Angry' }
   ];
 
   useEffect(() => {
