@@ -1,60 +1,52 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useSelector, useDispatch } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { 
   Camera, 
   Edit, 
   MapPin, 
   Briefcase, 
-  Award as GraduationCap, 
-  Link as LinkIcon, 
+  Award, 
   MoreVertical,
   Users,
   UserPlus,
   Globe,
-  Lock,
   Archive,
   Activity,
   Copy,
   Flag,
   Settings,
   X,
-  Check,
   Upload,
   Image as ImageIcon,
   Video,
-  MessageCircle,
-  Heart,
-  Share2,
-  Bookmark,
   CheckCircle,
   Plus,
   Home,
-  Mail,
   Search,
   User,
-  Video as VideoIcon,
-  Award,
-  Heart as HeartIcon,
-  Users as FriendsIcon,
-  Globe as WorldIcon,
-  Bell,
+  Heart,
   Send,
-  Music,
   Coffee,
-  Plane,
   Baby,
   Trophy,
   Clock,
   Feather,
-  Zap
+  Zap,
+  Mail,
+  Bell,
+  Music,
+  Bookmark,
+  MessageCircle,
+  Share2,
+  Lock,
+  Link as LinkIcon
 } from 'react-feather';
 import './Profile.css';
 
 const Profile = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const dispatch = useDispatch();
   const { user: currentUser } = useSelector(state => state.auth);
   const [profileUser, setProfileUser] = useState(null);
   const [activeTab, setActiveTab] = useState('posts');
@@ -328,12 +320,13 @@ const Profile = () => {
     { id: 'videos', label: 'Videos', count: videos.length },
   ];
 
+  // Use available icons for life events
   const lifeEventOptions = [
     { icon: <Briefcase size={18} />, label: 'Work & Employment', color: '#4267B2' },
-    { icon: <GraduationCap size={18} />, label: 'Education', color: '#45BD62' },
-    { icon: <HeartIcon size={18} />, label: 'Family & Relationships', color: '#FF5555' },
+    { icon: <Award size={18} />, label: 'Education', color: '#45BD62' },
+    { icon: <Heart size={18} />, label: 'Family & Relationships', color: '#FF5555' },
     { icon: <Home size={18} />, label: 'Home & Living', color: '#FF9900' },
-    { icon: <Plane size={18} />, label: 'Travel', color: '#8B9DC3' },
+    { icon: <Send size={18} />, label: 'Travel', color: '#8B9DC3' },
     { icon: <Trophy size={18} />, label: 'Milestone & Achievements', color: '#FFCC00' },
     { icon: <Baby size={18} />, label: 'Health & Wellness', color: '#6B8E23' },
     { icon: <Clock size={18} />, label: 'Remembrance', color: '#808080' },
@@ -345,7 +338,7 @@ const Profile = () => {
     { icon: <Home size={18} />, label: 'Home Town', value: profileUser?.profile?.hometown || 'Not specified' },
     { icon: <MapPin size={18} />, label: 'Current City', value: profileUser?.profile?.location || 'Not specified' },
     { icon: <Briefcase size={18} />, label: 'Workplace', value: profileUser?.profile?.work?.[0]?.company || 'Not specified' },
-    { icon: <GraduationCap size={18} />, label: 'Education', value: profileUser?.profile?.education?.[0]?.school || 'Not specified' },
+    { icon: <Award size={18} />, label: 'Education', value: profileUser?.profile?.education?.[0]?.school || 'Not specified' },
   ];
 
   if (!profileUser) {
@@ -585,10 +578,11 @@ const Profile = () => {
         {/* 6. Action Buttons */}
         <div className="profile-actions-section">
           <button className="action-btn primary" onClick={() => navigate('/create-story')}>
-               <Plus size={18} />
+            <Plus size={18} />
             <span>Add to story</span>
           </button>
-          <button className="action-btn secondary" onClick={() => navigate('/edit-profile')}>
+
+                    <button className="action-btn secondary" onClick={() => navigate('/edit-profile')}>
             <Edit size={18} />
             <span>Edit profile</span>
           </button>
@@ -696,7 +690,7 @@ const Profile = () => {
             className="post-option-btn"
             onClick={() => navigate('/create-post')}
           >
-            <VideoIcon size={20} />
+            <Video size={20} />
             <span>Live video</span>
           </button>
           <button 
