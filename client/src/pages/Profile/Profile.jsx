@@ -36,8 +36,6 @@ import {
   Video as VideoIcon,
   Award,
   Heart as HeartIcon,
-  Briefcase as WorkIcon,
-  GraduationCap as SchoolIcon,
   Users as FriendsIcon,
   Globe as WorldIcon,
   Bell,
@@ -331,8 +329,8 @@ const Profile = () => {
   ];
 
   const lifeEventOptions = [
-    { icon: <WorkIcon size={18} />, label: 'Work & Employment', color: '#4267B2' },
-    { icon: <SchoolIcon size={18} />, label: 'Education', color: '#45BD62' },
+    { icon: <Briefcase size={18} />, label: 'Work & Employment', color: '#4267B2' },
+    { icon: <GraduationCap size={18} />, label: 'Education', color: '#45BD62' },
     { icon: <HeartIcon size={18} />, label: 'Family & Relationships', color: '#FF5555' },
     { icon: <Home size={18} />, label: 'Home & Living', color: '#FF9900' },
     { icon: <Plane size={18} />, label: 'Travel', color: '#8B9DC3' },
@@ -584,10 +582,10 @@ const Profile = () => {
 
         <hr className="section-divider" />
 
-                 {/* 6. Action Buttons */}
+        {/* 6. Action Buttons */}
         <div className="profile-actions-section">
           <button className="action-btn primary" onClick={() => navigate('/create-story')}>
-            <Plus size={18} />
+               <Plus size={18} />
             <span>Add to story</span>
           </button>
           <button className="action-btn secondary" onClick={() => navigate('/edit-profile')}>
@@ -689,28 +687,28 @@ const Profile = () => {
             type="text"
             placeholder={`What's on your mind, ${profileUser.username}?`}
             className="post-input"
-            onClick={() => navigate('/client/src/components/Post/CreatePost.jsx')}
+            onClick={() => navigate('/create-post')}
             readOnly
           />
         </div>
         <div className="post-options-row">
           <button 
             className="post-option-btn"
-            onClick={() => navigate('/client/src/components/Post/CreatePost.jsx')}
+            onClick={() => navigate('/create-post')}
           >
             <VideoIcon size={20} />
             <span>Live video</span>
           </button>
           <button 
             className="post-option-btn"
-            onClick={() => navigate('/client/src/components/Post/CreatePost.jsx')}
+            onClick={() => navigate('/create-post')}
           >
             <ImageIcon size={20} />
             <span>Photo/video</span>
           </button>
           <button 
             className="post-option-btn"
-            onClick={() => navigate('/client/src/components/Post/CreatePost.jsx')}
+            onClick={() => navigate('/create-post')}
           >
             <Flag size={20} />
             <span>Life event</span>
@@ -721,11 +719,11 @@ const Profile = () => {
       {/* 11. Post Type Selector */}
       <div className="post-type-section">
         <div className="post-type-grid">
-          <button className="post-type-btn" onClick={() => navigate('/client/src/components/Post/CreatePost.jsx')}>
+          <button className="post-type-btn" onClick={() => navigate('/create-post')}>
             <ImageIcon size={24} />
             <span>Photo</span>
           </button>
-          <button className="post-type-btn" onClick={() => navigate('/client/src/components/Post/CreatePost.jsx')}>
+          <button className="post-type-btn" onClick={() => navigate('/create-post')}>
             <Video size={24} />
             <span>Reels</span>
           </button>
@@ -742,7 +740,7 @@ const Profile = () => {
                     key={index}
                     className="life-event-item"
                     onClick={() => {
-                      navigate('/client/src/components/Post/CreatePost.jsx');
+                      navigate('/create-post');
                       setShowMoreMenu(false);
                     }}
                     style={{ '--color': event.color }}
@@ -795,7 +793,7 @@ const Profile = () => {
           <div className="photos-grid">
             {photos.map((photo, index) => (
               <div key={index} className="photo-item">
-                <img src={photo} alt={`Photo ${index + 1}`} />
+                <img src={`${photo}?w=300&h=300&fit=crop`} alt={`Photo ${index + 1}`} />
               </div>
             ))}
           </div>
@@ -805,7 +803,7 @@ const Profile = () => {
           <div className="videos-grid">
             {videos.map(video => (
               <div key={video.id} className="video-item">
-                <img src={video.thumbnail} alt={video.title} />
+                <img src={`${video.thumbnail}?w=400&h=225&fit=crop`} alt={video.title} />
                 <div className="video-info">
                   <h4>{video.title}</h4>
                   <span>{video.views} views</span>
