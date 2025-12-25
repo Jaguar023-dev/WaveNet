@@ -51,7 +51,7 @@ const Layout = () => {
     { icon: <Users size={20} />, label: 'Friends', path: '/friends' },
     { icon: <MessageCircle size={20} />, label: 'Messages', path: '/messenger' },
     { icon: <ShoppingBag size={20} />, label: 'Marketplace', path: '/marketplace' },
-    { icon: <CheckCircle size={20} />, label: 'Verification', path: '/verification' }, // Added path
+    { icon: <CheckCircle size={20} />, label: 'Verification', path: '/verification' },
   ];
 
   return (
@@ -207,9 +207,13 @@ const Layout = () => {
       {/* Separator Line */}
       <div className="nav-separator"></div>
 
-      {/* Main Content */}
+      {/* Main Content with Facebook-style centered feed */}
       <main className="main-content">
-        <Outlet />
+        <div className="content-container">
+          <div className="feed-wrapper">
+            <Outlet />
+          </div>
+        </div>
       </main>
     </div>
   );
