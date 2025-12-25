@@ -1,8 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSelector } from 'react-redux';
-import { Send, Paperclip, Smile, Video, Phone, MoreVertical, Search } from 'react-feather';
-import useSocket from '../../hooks/useSocket';
-import api from '../../utils/api';
+import { 
+  Send, Paperclip, Smile, Video, Phone, MoreVertical, Search, 
+  Image as ImageIcon, Mic, X, Camera, MapPin, File, Calendar,
+  Check, CheckCheck, Reply, Trash2, Edit2, Heart, ThumbsUp,
+  Frown, Laugh, Angry, Surprise
+} from 'react-feather';
+import MessageService from '../../services/MessageService';
 import './Messenger.css';
 
 const Messenger = () => {
@@ -12,122 +16,169 @@ const Messenger = () => {
   const [newMessage, setNewMessage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [typingUsers, setTypingUsers] = useState({});
+  const [typingUsers, setTypingUsers] = useState([]);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
+  const [selectedMessage, setSelectedMessage] = useState(null);
+  const [editingMessage, setEditingMessage] = useState(null);
+  const [showReactions, setShowReactions] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [onlineUsers, setOnlineUsers] = useState([]);
 
-  const socket = useSocket();
   const messagesEndRef = useRef(null);
-  const { user } = useSelector(state => state.auth);
+  const messageInputRef = useRef(null);
+  const { user } = useSelector(state => state.auth || {});
+  const currentUser = user || MessageService.getCurrentUser();
+
+  // Available emojis for reactions
+  const reactionEmojis = [
+    { emoji: '❤️', label: 'Heart', component: <Heart size={16} /> },
+    { emoji: '👍', label: 'Like', component: <ThumbsUp size={16} /> },
+    { emoji: '😂', label: 'Laugh', component: <Laugh size={16} /> },
+    { emoji: '😮', label: 'Wow', component: <Surprise size={16} /> },
+    { emoji: '😢', label: 'Sad', component: <Frown size={16} /> },
+    { emoji: '😠', label: 'Angry', component: <Angry size={16} /> }
+  ];
 
   useEffect(() => {
-    fetchConversations();
+    loadConversations();
+    updateOnlineStatus();
     
-    if (socket) {
-      socket.on('receive-message', handleNewMessage);
-      socket.on('user-typing', handleUserTyping);
-      socket.on('message-read', handleMessageRead);
-      
-      return () => {
-        socket.off('receive-message');
-        socket.off('user-typing');
-        socket.off('message-read');
-      };
-    }
-  }, [socket]);
+    // Set up interval to check for new messages
+    const interval = setInterval(() => {
+      if (activeConversation) {
+        loadMessages(activeConversation.id);
+        checkTypingUsers();
+      }
+      updateOnlineUsers();
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [activeConversation]);
 
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
-  const fetchConversations = async () => {
-    try {
-      const response = await api.get('/messages/conversations');
-      setConversations(response.data);
-      if (response.data.length > 0 && !activeConversation) {
-        setActiveConversation(response.data[0]);
-      }
-    } catch (error) {
-      console.error('Error fetching conversations:', error);
+  useEffect(() => {
+    if (activeConversation) {
+      MessageService.markAsRead(activeConversation.id, currentUser.id);
     }
-  };
+  }, [activeConversation, currentUser.id]);
 
-  const fetchMessages = async (conversationId) => {
-    try {
-      const response = await api.get(`/messages/${conversationId}`);
-      setMessages(response.data);
-    } catch (error) {
-      console.error('Error fetching messages:', error);
-    }
-  };
-
-  const handleNewMessage = (data) => {
-    if (data.conversation === activeConversation?._id) {
-      setMessages(prev => [...prev, data.message]);
-      
-      // Update conversation in list
-      setConversations(prev => 
-        prev.map(conv => 
-          conv._id === data.conversation 
-            ? { ...conv, lastMessage: data.message, updatedAt: new Date() }
-            : conv
-        )
-      );
-    }
-  };
-
-  const handleUserTyping = (data) => {
-    setTypingUsers(prev => ({
-      ...prev,
-      [data.conversationId]: data.userId
-    }));
+  const loadConversations = () => {
+    const convs = MessageService.getConversations();
+    setConversations(convs);
     
-    // Clear typing indicator after 2 seconds
-    setTimeout(() => {
-      setTypingUsers(prev => {
-        const updated = { ...prev };
-        delete updated[data.conversationId];
-        return updated;
-      });
-    }, 2000);
+    // If no active conversation, set the first one
+    if (convs.length > 0 && !activeConversation) {
+      setActiveConversation(convs[0]);
+    }
   };
 
-  const handleSendMessage = async (e) => {
+  const loadMessages = (conversationId) => {
+    const msgs = MessageService.getMessages(conversationId);
+    setMessages(msgs);
+  };
+
+  const checkTypingUsers = () => {
+    if (!activeConversation) return;
+    const typing = MessageService.getTypingUsers(activeConversation.id);
+    setTypingUsers(typing);
+  };
+
+  const updateOnlineStatus = () => {
+    MessageService.updateUserStatus(currentUser.id, true);
+  };
+
+  const updateOnlineUsers = () => {
+    const users = MessageService.getAllUsers();
+    const online = users.filter(user => user.isOnline);
+    setOnlineUsers(online);
+  };
+
+  const handleSendMessage = (e) => {
     e.preventDefault();
     if (!newMessage.trim() || !activeConversation) return;
 
     const messageData = {
-      conversation: activeConversation._id,
+      sender: {
+        id: currentUser.id,
+        username: currentUser.username,
+        profilePicture: currentUser.profilePicture
+      },
       content: { text: newMessage },
       type: 'text'
     };
 
-    try {
-      // Emit typing stop
-      socket.emit('typing-stop', {
-        conversationId: activeConversation._id,
-        userId: user._id
-      });
-
-      // Send message
-      socket.emit('send-message', {
-        roomId: activeConversation._id,
-        message: messageData,
-        sender: user
-      });
-
-      // Clear input
-      setNewMessage('');
-    } catch (error) {
-      console.error('Error sending message:', error);
-    }
+    MessageService.sendMessage(activeConversation.id, messageData);
+    
+    // Clear typing status
+    MessageService.setTypingStatus(activeConversation.id, currentUser.id, false);
+    
+    // Update messages and conversations
+    loadMessages(activeConversation.id);
+    loadConversations();
+    
+    // Clear input
+    setNewMessage('');
+    messageInputRef.current?.focus();
   };
 
   const handleTyping = () => {
-    if (socket && activeConversation) {
-      socket.emit('typing', {
-        conversationId: activeConversation._id,
-        userId: user._id
-      });
+    if (activeConversation) {
+      MessageService.setTypingStatus(activeConversation.id, currentUser.id, true);
     }
+  };
+
+  const handleStartNewChat = () => {
+    const friends = MessageService.getFriends();
+    if (friends.length === 0) {
+      alert('Add some friends first to start chatting!');
+      return;
+    }
+    
+    // For now, start chat with first friend
+    const firstFriend = friends[0];
+    const conversation = MessageService.getOrCreateConversation(
+      currentUser.id,
+      firstFriend.id
+    );
+    
+    if (conversation) {
+      setActiveConversation(conversation);
+      loadConversations();
+    }
+  };
+
+  const handleReaction = (messageId, emoji) => {
+    if (!activeConversation) return;
+    
+    MessageService.addReaction(
+      messageId,
+      activeConversation.id,
+      currentUser.id,
+      emoji
+    );
+    
+    loadMessages(activeConversation.id);
+    setShowReactions(false);
+  };
+
+  const handleDeleteMessage = (messageId) => {
+    if (!activeConversation || !window.confirm('Delete this message?')) return;
+    
+    MessageService.deleteMessage(messageId, activeConversation.id);
+    loadMessages(activeConversation.id);
+    setSelectedMessage(null);
+  };
+
+  const handleEditMessage = (messageId, newText) => {
+    if (!activeConversation || !newText.trim()) return;
+    
+    MessageService.editMessage(messageId, activeConversation.id, { text: newText });
+    loadMessages(activeConversation.id);
+    setEditingMessage(null);
   };
 
   const scrollToBottom = () => {
@@ -135,23 +186,73 @@ const Messenger = () => {
   };
 
   const formatTime = (date) => {
-    return new Date(date).toLocaleTimeString([], { 
-      hour: '2-digit', 
-      minute: '2-digit' 
+    const messageDate = new Date(date);
+    const now = new Date();
+    const diffMs = now - messageDate;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    
+    return messageDate.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
     });
   };
+
+  const getMessageStatusIcon = (status, isSender) => {
+    if (!isSender) return null;
+    
+    switch (status) {
+      case 'sent':
+        return <Check size={14} />;
+      case 'delivered':
+        return <CheckCheck size={14} />;
+      case 'read':
+        return <CheckCheck size={14} className="read" />;
+      default:
+        return null;
+    }
+  };
+
+  const getOtherParticipant = () => {
+    if (!activeConversation) return null;
+    return activeConversation.participants?.find(p => p.id !== currentUser.id);
+  };
+
+  const otherParticipant = getOtherParticipant();
+  const isTyping = typingUsers.length > 0;
 
   return (
     <div className="messenger-container">
       {/* Sidebar */}
       <div className="conversations-sidebar">
         <div className="sidebar-header">
-          <h2>Messages</h2>
-          <button className="new-chat-btn">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-          </button>
+          <div className="header-left">
+            <h2>Chats</h2>
+            <div className="online-indicator">
+              <div className="online-dot"></div>
+              <span>{onlineUsers.length} online</span>
+            </div>
+          </div>
+          <div className="header-right">
+            <button 
+              className="new-chat-btn"
+              onClick={handleStartNewChat}
+              title="New message"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+            </button>
+            <button className="more-btn" title="More options">
+              <MoreVertical size={20} />
+            </button>
+          </div>
         </div>
         
         <div className="search-container">
@@ -163,58 +264,75 @@ const Messenger = () => {
             onChange={(e) => setSearchQuery(e.target.value)}
             className="search-input"
           />
+          {searchQuery && (
+            <button 
+              className="clear-search-btn"
+              onClick={() => setSearchQuery('')}
+            >
+              <X size={16} />
+            </button>
+          )}
         </div>
         
         <div className="conversations-list">
-          {conversations.map(conversation => (
-            <div
-              key={conversation._id}
-              className={`conversation-item ${activeConversation?._id === conversation._id ? 'active' : ''}`}
-              onClick={() => {
-                setActiveConversation(conversation);
-                fetchMessages(conversation._id);
-              }}
-            >
-              <div className="conversation-avatar">
-                {conversation.type === 'direct' ? (
-                  <img
-                    src={conversation.participants[0]?.profilePicture || '/default-avatar.png'}
-                    alt="Avatar"
-                    className="avatar-img"
-                  />
-                ) : (
-                  <div className="group-avatar">
-                    <span>{conversation.name?.charAt(0)}</span>
+          {conversations.length === 0 ? (
+            <div className="empty-conversations">
+              <div className="empty-illustration">💬</div>
+              <p>No conversations yet</p>
+              <button 
+                className="start-chat-sidebar-btn"
+                onClick={handleStartNewChat}
+              >
+                Start your first chat
+              </button>
+            </div>
+          ) : (
+            conversations.map(conversation => (
+              <div
+                key={conversation.id}
+                className={`conversation-item ${activeConversation?.id === conversation.id ? 'active' : ''}`}
+                onClick={() => {
+                  setActiveConversation(conversation);
+                  loadMessages(conversation.id);
+                  MessageService.markAsRead(conversation.id, currentUser.id);
+                  loadConversations();
+                }}
+              >
+                <div className="conversation-avatar">
+                  <div className="avatar-wrapper">
+                    <img
+                      src={conversation.otherParticipant?.profilePicture || '/default-avatar.png'}
+                      alt={conversation.otherParticipant?.username}
+                      className="avatar-img"
+                    />
+                    {onlineUsers.some(u => u.id === conversation.otherParticipant?.id) && (
+                      <div className="online-badge"></div>
+                    )}
                   </div>
-                )}
-              </div>
-              
-              <div className="conversation-info">
-                <div className="conversation-header">
-                  <h4 className="conversation-name">
-                    {conversation.type === 'direct' 
-                      ? conversation.participants[0]?.username
-                      : conversation.name}
-                  </h4>
-                  <span className="conversation-time">
-                    {formatTime(conversation.updatedAt)}
-                  </span>
                 </div>
                 
-                <p className="conversation-preview">
-                  {conversation.lastMessage?.content?.text || 'No messages yet'}
-                </p>
-                
-                {typingUsers[conversation._id] && (
-                  <div className="typing-indicator">
-                    <span className="typing-dot"></span>
-                    <span className="typing-dot"></span>
-                    <span className="typing-dot"></span>
+                <div className="conversation-info">
+                  <div className="conversation-header">
+                    <h4 className="conversation-name">
+                      {conversation.otherParticipant?.username || 'Unknown'}
+                    </h4>
+                    <span className="conversation-time">
+                      {conversation.lastMessage ? formatTime(conversation.lastMessage.createdAt) : ''}
+                    </span>
                   </div>
-                )}
+                  
+                  <div className="conversation-preview">
+                    <p className="preview-text">
+                      {conversation.lastMessage?.content?.text || 'Say hello!'}
+                    </p>
+                    {conversation.unreadCount > 0 && (
+                      <span className="unread-badge">{conversation.unreadCount}</span>
+                    )}
+                  </div>
+                </div>
               </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       </div>
 
@@ -226,39 +344,40 @@ const Messenger = () => {
             <div className="chat-header">
               <div className="chat-user-info">
                 <div className="chat-avatar">
-                  {activeConversation.type === 'direct' ? (
+                  <div className="avatar-wrapper">
                     <img
-                      src={activeConversation.participants[0]?.profilePicture || '/default-avatar.png'}
-                      alt="Avatar"
+                      src={otherParticipant?.profilePicture || '/default-avatar.png'}
+                      alt={otherParticipant?.username}
                     />
-                  ) : (
-                    <div className="group-avatar-large">
-                      <span>{activeConversation.name?.charAt(0)}</span>
-                    </div>
-                  )}
+                    {onlineUsers.some(u => u.id === otherParticipant?.id) && (
+                      <div className="online-badge-large"></div>
+                    )}
+                  </div>
                 </div>
                 <div className="chat-user-details">
                   <h3 className="chat-user-name">
-                    {activeConversation.type === 'direct'
-                      ? activeConversation.participants[0]?.username
-                      : activeConversation.name}
+                    {otherParticipant?.username || 'Unknown'}
                   </h3>
                   <p className="chat-user-status">
-                    {typingUsers[activeConversation._id]
-                      ? 'typing...'
-                      : 'Online'}
+                    {isTyping ? (
+                      <span className="typing-text">typing...</span>
+                    ) : onlineUsers.some(u => u.id === otherParticipant?.id) ? (
+                      <span className="online-text">Online</span>
+                    ) : (
+                      <span className="offline-text">Offline</span>
+                    )}
                   </p>
                 </div>
               </div>
               
               <div className="chat-actions">
-                <button className="chat-action-btn">
+                <button className="chat-action-btn" title="Voice call">
                   <Phone size={20} />
                 </button>
-                <button className="chat-action-btn">
+                <button className="chat-action-btn" title="Video call">
                   <Video size={20} />
                 </button>
-                <button className="chat-action-btn">
+                <button className="chat-action-btn" title="More options">
                   <MoreVertical size={20} />
                 </button>
               </div>
@@ -266,96 +385,136 @@ const Messenger = () => {
 
             {/* Messages Container */}
             <div className="messages-container">
-              {messages.map((message, index) => (
-                <div
-                  key={message._id || index}
-                  className={`message ${message.sender._id === user._id ? 'sent' : 'received'}`}
-                >
-                  <div className="message-content">
-                    {message.content.text && (
-                      <p className="message-text">{message.content.text}</p>
-                    )}
+              {messages.length === 0 ? (
+                <div className="no-messages">
+                  <div className="welcome-message">
+                    <img
+                      src={otherParticipant?.profilePicture || '/default-avatar.png'}
+                      alt={otherParticipant?.username}
+                      className="welcome-avatar"
+                    />
+                    <h3>{otherParticipant?.username}</h3>
+                    <p>This is the beginning of your chat with {otherParticipant?.username}</p>
+                    <p className="welcome-tip">Say hello! 👋</p>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {messages.map((message, index) => {
+                    const isSender = message.sender.id === currentUser.id;
+                    const isSystem = message.sender.id === 'system';
+                    const prevMessage = messages[index - 1];
+                    const showDate = !prevMessage || 
+                      new Date(message.createdAt).getDate() !== 
+                      new Date(prevMessage.createdAt).getDate();
                     
-                    {message.content.media?.map((media, i) => (
-                      <div key={i} className="message-media">
-                        {media.type === 'image' ? (
-                          <img src={media.url} alt="Media" className="media-img" />
-                        ) : media.type === 'video' ? (
-                          <video src={media.url} controls className="media-video" />
-                        ) : (
-                          <a href={media.url} download className="media-file">
-                            📎 {media.name}
-                          </a>
+                    return (
+                      <React.Fragment key={message.id}>
+                        {showDate && (
+                          <div className="date-separator">
+                            <span>{new Date(message.createdAt).toLocaleDateString('en-US', { 
+                              weekday: 'long',
+                              month: 'long',
+                              day: 'numeric'
+                            })}</span>
+                          </div>
                         )}
-                      </div>
-                    ))}
-                    
-                    <span className="message-time">
-                      {formatTime(message.createdAt)}
-                    </span>
-                  </div>
-                </div>
-              ))}
-              
-              {/* Typing indicator */}
-              {typingUsers[activeConversation._id] && (
-                <div className="typing-indicator-message">
-                  <div className="typing-dots">
-                    <div className="typing-dot"></div>
-                    <div className="typing-dot"></div>
-                    <div className="typing-dot"></div>
-                  </div>
-                </div>
-              )}
-              
-              <div ref={messagesEndRef} />
-            </div>
-
-            {/* Message Input */}
-            <form className="message-input-container" onSubmit={handleSendMessage}>
-              <button type="button" className="input-action-btn">
-                <Paperclip size={20} />
-              </button>
-              
-              <input
-                type="text"
-                value={newMessage}
-                onChange={(e) => {
-                  setNewMessage(e.target.value);
-                  handleTyping();
-                }}
-                placeholder="Type a message..."
-                className="message-input"
-              />
-              
-              <button type="button" className="input-action-btn">
-                <Smile size={20} />
-              </button>
-              
-              <button
-                type="submit"
-                disabled={!newMessage.trim()}
-                className="send-btn"
-              >
-                <Send size={20} />
-              </button>
-            </form>
-          </>
-        ) : (
-          <div className="no-conversation-selected">
-            <div className="welcome-illustration">
-              <svg className="w-24 h-24 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-              </svg>
-            </div>
-            <h3>Your Messages</h3>
-            <p>Send private messages to a friend or group.</p>
-            <button className="start-chat-btn">Start a Conversation</button>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-export default Messenger;
+                        
+                        <div
+                          className={`message-wrapper ${isSender ? 'sent' : 'received'} ${isSystem ? 'system' : ''}`}
+                          onContextMenu={(e) => {
+                            e.preventDefault();
+                            if (!isSystem) setSelectedMessage(message);
+                          }}
+                        >
+                          {!isSender && !isSystem && (
+                            <img
+                              src={message.sender.profilePicture || '/default-avatar.png'}
+                              alt={message.sender.username}
+                              className="message-avatar"
+                            />
+                          )}
+                          
+                          <div className="message-content-wrapper">
+                            {!isSender && !isSystem && (
+                              <div className="message-sender">
+                                {message.sender.username}
+                              </div>
+                            )}
+                            
+                            <div className={`message-bubble ${isSystem ? 'system-bubble' : ''}`}>
+                              {editingMessage?.id === message.id ? (
+                                <div className="edit-message-container">
+                                  <input
+                                    type="text"
+                                    defaultValue={message.content.text}
+                                    className="edit-input"
+                                    autoFocus
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') {
+                                        handleEditMessage(message.id, e.target.value);
+                                      } else if (e.key === 'Escape') {
+                                        setEditingMessage(null);
+                                      }
+                                    }}
+                                    onBlur={(e) => {
+                                      if (e.target.value !== message.content.text) {
+                                        handleEditMessage(message.id, e.target.value);
+                                      } else {
+                                        setEditingMessage(null);
+                                      }
+                                    }}
+                                  />
+                                  <button 
+                                    className="edit-cancel-btn"
+                                    onClick={() => setEditingMessage(null)}
+                                  >
+                                    <X size={14} />
+                                  </button>
+                                </div>
+                              ) : (
+                                <>
+                                  {message.content.text && (
+                                    <p className="message-text">{message.content.text}</p>
+                                  )}
+                                  
+                                  {message.edited && (
+                                    <span className="edited-indicator">(edited)</span>
+                                  )}
+                                  
+                                  <div className="message-footer">
+                                    <span className="message-time">
+                                      {formatTime(message.createdAt)}
+                                    </span>
+                                    {getMessageStatusIcon(message.status, isSender)}
+                                  </div>
+                                </>
+                              )}
+                            </div>
+                            
+                            {message.reactions && message.reactions.length > 0 && (
+                              <div className="message-reactions">
+                                {message.reactions.map((reaction, idx) => (
+                                  <span key={idx} className="reaction">
+                                    {reaction.emoji}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                          
+                          {isSender && !isSystem && (
+                            <div className="message-actions">
+                              <button 
+                                className="message-action-btn"
+                                onClick={() => setEditingMessage(message)}
+                                title="Edit"
+                              >
+                                <Edit2 size={14} />
+                              </button>
+                              <button 
+                                className="message-action-btn"
+                                onClick={() => handleDeleteMessage(message.id)}
+                                title="Delete"
+                              >
+                        
