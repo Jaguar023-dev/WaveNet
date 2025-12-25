@@ -517,7 +517,7 @@ const Messenger = () => {
                                 onClick={() => handleDeleteMessage(message.id)}
                                 title="Delete"
                               >
-                                                      >
+                                                     
                                 <Trash2 size={14} />
                               </button>
                               <button 
