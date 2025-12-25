@@ -517,4 +517,258 @@ const Messenger = () => {
                                 onClick={() => handleDeleteMessage(message.id)}
                                 title="Delete"
                               >
-                        
+                                                      >
+                                <Trash2 size={14} />
+                              </button>
+                              <button 
+                                className="message-action-btn"
+                                onClick={() => setShowReactions(true)}
+                                title="React"
+                              >
+                                <Heart size={14} />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </React.Fragment>
+                    );
+                  })}
+                  
+                  {/* Typing indicator */}
+                  {isTyping && (
+                    <div className="typing-indicator-message">
+                      <div className="typing-dots">
+                        <div className="typing-dot"></div>
+                        <div className="typing-dot"></div>
+                        <div className="typing-dot"></div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div ref={messagesEndRef} />
+                </>
+              )}
+            </div>
+
+            {/* Selected Message Menu */}
+            {selectedMessage && (
+              <div className="selected-message-menu">
+                <div className="menu-content">
+                  <button 
+                    className="menu-item"
+                    onClick={() => {
+                      setEditingMessage(selectedMessage);
+                      setSelectedMessage(null);
+                    }}
+                  >
+                    <Edit2 size={16} />
+                    <span>Edit</span>
+                  </button>
+                  <button 
+                    className="menu-item"
+                    onClick={() => {
+                      handleDeleteMessage(selectedMessage.id);
+                      setSelectedMessage(null);
+                    }}
+                  >
+                    <Trash2 size={16} />
+                    <span>Delete</span>
+                  </button>
+                  <button 
+                    className="menu-item"
+                    onClick={() => {
+                      setShowReactions(true);
+                      setSelectedMessage(null);
+                    }}
+                  >
+                    <Heart size={16} />
+                    <span>React</span>
+                  </button>
+                  <button 
+                    className="menu-item"
+                    onClick={() => setSelectedMessage(null)}
+                  >
+                    <X size={16} />
+                    <span>Cancel</span>
+                  </button>
+                </div>
+                <div 
+                  className="menu-overlay"
+                  onClick={() => setSelectedMessage(null)}
+                />
+              </div>
+            )}
+
+            {/* Reactions Picker */}
+            {showReactions && (
+              <div className="reactions-picker">
+                <div className="reactions-grid">
+                  {reactionEmojis.map(reaction => (
+                    <button
+                      key={reaction.emoji}
+                      className="reaction-option"
+                      onClick={() => {
+                        if (selectedMessage) {
+                          handleReaction(selectedMessage.id, reaction.emoji);
+                        }
+                      }}
+                      title={reaction.label}
+                    >
+                      {reaction.component || reaction.emoji}
+                    </button>
+                  ))}
+                </div>
+                <div 
+                  className="reactions-overlay"
+                  onClick={() => setShowReactions(false)}
+                />
+              </div>
+            )}
+
+            {/* Message Input */}
+            <form className="message-input-container" onSubmit={handleSendMessage}>
+              <div className="input-actions-left">
+                <div className="attachment-menu-container">
+                  <button 
+                    type="button" 
+                    className="input-action-btn"
+                    onClick={() => setShowAttachmentMenu(!showAttachmentMenu)}
+                    title="Attach"
+                  >
+                    <Paperclip size={20} />
+                  </button>
+                  
+                  {showAttachmentMenu && (
+                    <div className="attachment-menu">
+                      <button type="button" className="attachment-option">
+                        <ImageIcon size={18} />
+                        <span>Photo & Video</span>
+                      </button>
+                      <button type="button" className="attachment-option">
+                        <Camera size={18} />
+                        <span>Camera</span>
+                      </button>
+                      <button type="button" className="attachment-option">
+                        <File size={18} />
+                        <span>Document</span>
+                      </button>
+                      <button type="button" className="attachment-option">
+                        <MapPin size={18} />
+                        <span>Location</span>
+                      </button>
+                      <button type="button" className="attachment-option">
+                        <Calendar size={18} />
+                        <span>Event</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+                
+                <button 
+                  type="button" 
+                  className="input-action-btn"
+                  onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                  title="Emoji"
+                >
+                  <Smile size={20} />
+                </button>
+              </div>
+              
+              <input
+                ref={messageInputRef}
+                type="text"
+                value={newMessage}
+                onChange={(e) => {
+                  setNewMessage(e.target.value);
+                  handleTyping();
+                }}
+                placeholder="Type a message..."
+                className="message-input"
+              />
+              
+              <div className="input-actions-right">
+                {newMessage.trim() ? (
+                  <button
+                    type="submit"
+                    className="send-btn"
+                    title="Send"
+                  >
+                    <Send size={20} />
+                  </button>
+                ) : (
+                  <button 
+                    type="button" 
+                    className="voice-btn"
+                    onClick={() => setIsRecording(!isRecording)}
+                    title="Voice message"
+                  >
+                    <Mic size={20} />
+                    {isRecording && <div className="recording-indicator"></div>}
+                  </button>
+                )}
+              </div>
+              
+              {/* Emoji Picker */}
+              {showEmojiPicker && (
+                <div className="emoji-picker">
+                  <div className="emoji-grid">
+                    {['😀', '😂', '🥰', '😎', '🤩', '😜', '👍', '❤️', '🎉', '🔥'].map(emoji => (
+                      <button
+                        key={emoji}
+                        type="button"
+                        className="emoji-option"
+                        onClick={() => {
+                          setNewMessage(prev => prev + emoji);
+                          messageInputRef.current?.focus();
+                        }}
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                  <div 
+                    className="emoji-overlay"
+                    onClick={() => setShowEmojiPicker(false)}
+                  />
+                </div>
+              )}
+            </form>
+          </>
+        ) : (
+          <div className="no-conversation-selected">
+            <div className="welcome-illustration">
+              <div className="message-bubble-large">💬</div>
+            </div>
+            <h3>WaveNet Messenger</h3>
+            <p>Send and receive messages without keeping your phone online.</p>
+            <p>Use WaveNet on up to 4 linked devices.</p>
+            <button 
+              className="start-chat-btn"
+              onClick={handleStartNewChat}
+            >
+              Start a Conversation
+            </button>
+            <div className="messenger-features">
+              <div className="feature">
+                <div className="feature-icon">🔒</div>
+                <div className="feature-text">
+                  <strong>End-to-end encrypted</strong>
+                  <span>Your personal messages are secured</span>
+                </div>
+              </div>
+              <div className="feature">
+                <div className="feature-icon">⚡</div>
+                <div className="feature-text">
+                  <strong>Fast and reliable</strong>
+                  <span>Messages deliver instantly</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default Messenger;
