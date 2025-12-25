@@ -1,4 +1,4 @@
-// client/src/components/post/CreatePost.jsx
+// client/src/components/Post/CreatePost.jsx
 import React, { useState, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import { 
