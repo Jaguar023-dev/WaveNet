@@ -586,4 +586,175 @@ const Post = ({ post, isReshare = false, originalPost = null }) => {
             <span>{userReaction ? reactions.find(r => r.type === userReaction)?.label : 'Like'}</span>
           </button>
           
+                    <button 
+            className={`action-btn ${showComments ? 'active' : ''}`}
+            onClick={() => {
+              setShowComments(!showComments);
+              if (!showComments && commentInputRef.current) {
+                setTimeout(() => commentInputRef.current.focus(), 100);
+              }
+            }}
+          >
+            <MessageCircle size={20} />
+            <span>Comment</span>
+          </button>
           
+          <button 
+            className="action-btn"
+            onClick={() => setShowShareMenu(!showShareMenu)}
+          >
+            <Share2 size={20} />
+            <span>Share</span>
+          </button>
+        </div>
+        
+        <button 
+          className={`save-btn ${isSaved ? 'saved' : ''}`}
+          onClick={handleSavePost}
+          title={isSaved ? 'Unsave post' : 'Save post'}
+        >
+          <Bookmark size={20} />
+        </button>
+
+        {/* Reactions Popup */}
+        {showReactions && (
+          <div 
+            className="reactions-popup" 
+            onMouseEnter={() => setShowReactions(true)} 
+            onMouseLeave={() => setTimeout(() => setShowReactions(false), 500)}
+          >
+            {reactions.map(reaction => (
+              <button
+                key={reaction.type}
+                className="reaction-option"
+                onClick={() => handleReaction(reaction.type)}
+                title={reaction.label}
+                style={{ transform: userReaction === reaction.type ? 'scale(1.3)' : 'scale(1)' }}
+              >
+                <span className="reaction-emoji" style={{ fontSize: '22px' }}>
+                  {reaction.emoji}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Share Menu */}
+        {showShareMenu && (
+          <div className="share-menu">
+            <div className="share-options">
+              <button className="share-option" onClick={() => handleShare('profile')}>
+                <div className="share-icon">
+                  <Users size={20} />
+                </div>
+                <div className="share-info">
+                  <strong>Share to your profile</strong>
+                  <p>Post will appear on your timeline</p>
+                </div>
+              </button>
+              <button className="share-option" onClick={() => handleShare('friends')}>
+                <div className="share-icon">
+                  <UsersIcon size={20} />
+                </div>
+                <div className="share-info">
+                  <strong>Share with friends</strong>
+                  <p>Send in Messenger or group chat</p>
+                </div>
+              </button>
+              <button className="share-option" onClick={() => handleShare('copy')}>
+                <div className="share-icon">
+                  <Link size={20} />
+                </div>
+                <div className="share-info">
+                  <strong>Copy link</strong>
+                  <p>Copy URL to share anywhere</p>
+                </div>
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Comments Section */}
+      {showComments && (
+        <div className="comments-section">
+          {/* Comment Input */}
+          <div className="comment-input-container">
+            <img 
+              src={user?.profilePicture || '/default-avatar.png'} 
+              alt={user?.username}
+              className="comment-avatar"
+            />
+            <div className="comment-input-wrapper">
+              <input
+                ref={commentInputRef}
+                type="text"
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                placeholder="Write a comment..."
+                className="comment-input"
+                onKeyPress={(e) => e.key === 'Enter' && handleComment()}
+              />
+              <div className="comment-actions">
+                <button className="comment-action-btn">
+                  <Smile size={18} />
+                </button>
+                <button 
+                  className="comment-send-btn"
+                  onClick={handleComment}
+                  disabled={!comment.trim()}
+                >
+                  <Send size={18} />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Comments List */}
+          <div className="comments-list">
+            {comments.length > 0 ? (
+              comments.slice(0, 3).map(comment => (
+                <div key={comment.id} className="comment-item">
+                  <img 
+                    src={comment.user?.profilePicture || '/default-avatar.png'} 
+                    alt={comment.user?.username}
+                    className="comment-avatar"
+                  />
+                  <div className="comment-content">
+                    <div className="comment-header">
+                      <div className="comment-user-wrapper">
+                        <span className="comment-username">{comment.user?.username}</span>
+                        {comment.user?.isVerified && <VerifiedBadge size={14} showTooltip={false} />}
+                      </div>
+                      <span className="comment-time">{formatTime(comment.createdAt)}</span>
+                    </div>
+                    <p className="comment-text">{comment.content}</p>
+                    <div className="comment-actions-bottom">
+                      <button 
+                        className="comment-like-btn"
+                        onClick={() => handleLikeComment(comment.id)}
+                      >
+                        Like ({comment.likes || 0})
+                      </button>
+                      <span className="comment-reply">Reply</span>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="no-comments">No comments yet. Be the first to comment!</p>
+            )}
+            
+            {comments.length > 3 && (
+              <button className="view-all-comments">
+                View all {comments.length} comments
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default Post;
