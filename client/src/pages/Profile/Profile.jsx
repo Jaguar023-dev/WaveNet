@@ -584,4 +584,239 @@ const Profile = () => {
 
         <hr className="section-divider" />
 
-         
+                 {/* 6. Action Buttons */}
+        <div className="profile-actions-section">
+          <button className="action-btn primary" onClick={() => navigate('/create-story')}>
+            <Plus size={18} />
+            <span>Add to story</span>
+          </button>
+          <button className="action-btn secondary" onClick={() => navigate('/edit-profile')}>
+            <Edit size={18} />
+            <span>Edit profile</span>
+          </button>
+          <div className="menu-container">
+            <button 
+              className="action-btn icon"
+              onClick={() => setShowMoreMenu(!showMoreMenu)}
+            >
+              <MoreVertical size={18} />
+            </button>
+            
+            {showMoreMenu && (
+              <div className="more-menu-dropdown">
+                {moreMenuOptions.map((option, index) => (
+                  <button
+                    key={index}
+                    className="more-menu-item"
+                    onClick={() => {
+                      option.action();
+                      setShowMoreMenu(false);
+                    }}
+                  >
+                    {option.icon}
+                    <span>{option.label}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <hr className="section-divider" />
+
+        {/* 7. Navigation Tabs */}
+        <div className="profile-nav-tabs">
+          {tabs.map(tab => (
+            <button
+              key={tab.id}
+              className={`nav-tab ${activeTab === tab.id ? 'active' : ''}`}
+              onClick={() => setActiveTab(tab.id)}
+            >
+              {tab.label}
+              {tab.count && <span className="tab-count">{tab.count}</span>}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <hr className="section-divider full-width" />
+
+      {/* 8. Public Details Section */}
+      <div className="public-details-section">
+        <h3 className="section-title">Public Details</h3>
+        <div className="public-details-grid">
+          {publicDetails.map((detail, index) => (
+            <div key={index} className="public-detail-item">
+              {detail.icon}
+              <div>
+                <strong>{detail.label}</strong>
+                <p>{detail.value}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <hr className="section-divider full-width" />
+
+      {/* 9. Friends Section */}
+      <div className="friends-section">
+        <div className="section-header">
+          <h3 className="section-title">Friends</h3>
+          <span className="friends-count">1.2K friends</span>
+          <button className="see-all-btn">See all friends</button>
+        </div>
+        <div className="friends-grid">
+          {friends.slice(0, 6).map(friend => (
+            <div key={friend.id} className="friend-card" onClick={() => navigate(`/profile/${friend.id}`)}>
+              <img src={friend.avatar} alt={friend.name} className="friend-avatar" />
+              <p className="friend-name">{friend.name}</p>
+              <span className="mutual-friends">{friend.mutual} mutual friends</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 10. Create Post Section */}
+      <div className="create-post-section">
+        <div className="create-post-header">
+          <img
+            src={profileUser.profile?.profilePicture?.url || '/default-avatar.png'}
+            alt={profileUser.username}
+            className="post-author-avatar"
+          />
+          <input
+            type="text"
+            placeholder={`What's on your mind, ${profileUser.username}?`}
+            className="post-input"
+            onClick={() => navigate('/client/src/components/Post/CreatePost.jsx')}
+            readOnly
+          />
+        </div>
+        <div className="post-options-row">
+          <button 
+            className="post-option-btn"
+            onClick={() => navigate('/client/src/components/Post/CreatePost.jsx')}
+          >
+            <VideoIcon size={20} />
+            <span>Live video</span>
+          </button>
+          <button 
+            className="post-option-btn"
+            onClick={() => navigate('/client/src/components/Post/CreatePost.jsx')}
+          >
+            <ImageIcon size={20} />
+            <span>Photo/video</span>
+          </button>
+          <button 
+            className="post-option-btn"
+            onClick={() => navigate('/client/src/components/Post/CreatePost.jsx')}
+          >
+            <Flag size={20} />
+            <span>Life event</span>
+          </button>
+        </div>
+      </div>
+
+      {/* 11. Post Type Selector */}
+      <div className="post-type-section">
+        <div className="post-type-grid">
+          <button className="post-type-btn" onClick={() => navigate('/client/src/components/Post/CreatePost.jsx')}>
+            <ImageIcon size={24} />
+            <span>Photo</span>
+          </button>
+          <button className="post-type-btn" onClick={() => navigate('/client/src/components/Post/CreatePost.jsx')}>
+            <Video size={24} />
+            <span>Reels</span>
+          </button>
+          <div className="menu-container">
+            <button className="post-type-btn" onClick={() => setShowMoreMenu(!showMoreMenu)}>
+              <Award size={24} />
+              <span>Life event</span>
+            </button>
+            
+            {showMoreMenu && (
+              <div className="life-events-dropdown">
+                {lifeEventOptions.map((event, index) => (
+                  <button
+                    key={index}
+                    className="life-event-item"
+                    onClick={() => {
+                      navigate('/client/src/components/Post/CreatePost.jsx');
+                      setShowMoreMenu(false);
+                    }}
+                    style={{ '--color': event.color }}
+                  >
+                    <div className="life-event-icon" style={{ backgroundColor: event.color }}>
+                      {event.icon}
+                    </div>
+                    <span>{event.label}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <hr className="section-divider full-width" />
+
+      {/* Content based on active tab */}
+      <div className="tab-content">
+        {activeTab === 'posts' && (
+          <div className="posts-grid">
+            {posts.map(post => (
+              <div key={post.id} className="post-card">
+                <div className="post-header">
+                  <img
+                    src={profileUser.profile?.profilePicture?.url || '/default-avatar.png'}
+                    alt={profileUser.username}
+                    className="post-avatar"
+                  />
+                  <div className="post-author">
+                    <h4>{profileUser.username}</h4>
+                    <span className="post-time">{post.time}</span>
+                  </div>
+                </div>
+                <div className="post-content">
+                  <p>{post.content}</p>
+                </div>
+                <div className="post-stats">
+                  <span>{post.likes} likes</span>
+                  <span>{post.comments} comments</span>
+                  <span>{post.shares} shares</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {activeTab === 'photos' && (
+          <div className="photos-grid">
+            {photos.map((photo, index) => (
+              <div key={index} className="photo-item">
+                <img src={photo} alt={`Photo ${index + 1}`} />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {activeTab === 'videos' && (
+          <div className="videos-grid">
+            {videos.map(video => (
+              <div key={video.id} className="video-item">
+                <img src={video.thumbnail} alt={video.title} />
+                <div className="video-info">
+                  <h4>{video.title}</h4>
+                  <span>{video.views} views</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default Profile;
