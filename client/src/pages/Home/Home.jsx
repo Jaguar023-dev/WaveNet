@@ -1,10 +1,9 @@
 // client/src/pages/Home/Home.jsx
-import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
+import React, { useState, lazy, Suspense } from 'react';
+import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { Image } from 'react-feather';
-import { fetchFeed, clearPosts } from '../../store/slices/postSlice';
-import Post from '../../components/Post/Post';
+import Feed from '../../components/Feed/Feed';
 import StoryCarousel from '../../components/Story/StoryCarousel';
 import LoadingSpinner from '../../components/Common/LoadingSpinner';
 import './Home.css';
@@ -14,67 +13,26 @@ const CreatePost = lazy(() => import('../../components/Post/CreatePost'));
 
 const Home = () => {
   const [showCreatePost, setShowCreatePost] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
-  const [page, setPage] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
   
-  const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { feed, loading, error } = useSelector(state => state.posts);
-  const { user } = useSelector(state => state.auth);
-  const feedRef = useRef(null);
-
-  // Fetch initial feed
-  useEffect(() => {
-    dispatch(clearPosts());
-    loadFeed(1);
-    
-    // Set up infinite scroll
-    const handleScroll = () => {
-      if (!feedRef.current || loadingMore || !hasMore) return;
-      
-      const { scrollTop, scrollHeight, clientHeight } = feedRef.current;
-      if (scrollHeight - scrollTop <= clientHeight * 1.5) {
-        loadMore();
-      }
-    };
-    
-    const feedElement = feedRef.current;
-    if (feedElement) {
-      feedElement.addEventListener('scroll', handleScroll);
-      return () => feedElement.removeEventListener('scroll', handleScroll);
-    }
-  }, []);
-
-  const loadFeed = async (pageNum) => {
-    try {
-      setLoadingMore(true);
-      const result = await dispatch(fetchFeed({ page: pageNum, limit: 10 })).unwrap();
-      setHasMore(result.hasMore);
-      setPage(pageNum);
-    } catch (error) {
-      console.error('Error loading feed:', error);
-    } finally {
-      setLoadingMore(false);
-    }
-  };
-
-  const loadMore = () => {
-    if (!loadingMore && hasMore) {
-      loadFeed(page + 1);
-    }
-  };
-
-  const handlePostCreated = () => {
-    dispatch(clearPosts());
-    loadFeed(1);
-    setShowCreatePost(false);
-  };
+  const { user } = useSelector(state => state.auth || {});
+  const { feed, loading } = useSelector(state => state.posts || {});
 
   // Handle profile click
   const handleProfileClick = () => {
     if (user?._id) {
       navigate(`/profile/${user._id}`);
+    }
+  };
+
+  const handlePostCreated = (newPost) => {
+    console.log('New post created:', newPost);
+    setShowCreatePost(false);
+    
+    // Refresh feed by reloading the page or triggering a refresh
+    if (window.refreshFeed) {
+      window.refreshFeed();
     }
   };
 
@@ -90,7 +48,7 @@ const Home = () => {
             title="Go to your profile"
           >
             <img 
-              src={user?.profile?.profilePicture?.url || '/default-avatar.png'} 
+              src={user?.profile?.profilePicture?.url || user?.profilePicture || '/default-avatar.png'} 
               alt={user?.username}
               className="profile-pic-small"
             />
@@ -104,7 +62,7 @@ const Home = () => {
             onClick={() => setShowCreatePost(true)}
             type="button"
           >
-            What's on your mind, {user?.username}?
+            What's on your mind, {user?.username || 'User'}?
           </button>
           <button 
             className="photo-btn"
@@ -124,50 +82,9 @@ const Home = () => {
       {/* Stories Separator */}
       <div className="stories-separator"></div>
 
-      {/* Posts Feed */}
-      <div className="posts-feed" ref={feedRef}>
-        {loading && page === 1 ? (
-          <LoadingSpinner text="Loading posts..." />
-        ) : error ? (
-          <div className="error-message">
-            <p>Error loading posts: {error}</p>
-            <button 
-              onClick={() => loadFeed(1)}
-              className="retry-btn"
-              type="button"
-            >
-              Retry
-            </button>
-          </div>
-        ) : feed.length === 0 ? (
-          <div className="empty-feed">
-            <div className="empty-illustration">
-              <div className="newspaper-icon">📰</div>
-            </div>
-            <h3>No posts yet</h3>
-            <p>Start following people or join groups to see posts in your feed.</p>
-            <button className="explore-btn" type="button">Explore WaveNet</button>
-          </div>
-        ) : (
-          <>
-            {feed.map(post => (
-              <Post key={post._id} post={post} />
-            ))}
-            
-            {loadingMore && (
-              <div className="loading-more">
-                <LoadingSpinner size="small" text="Loading more posts..." />
-              </div>
-            )}
-            
-            {!hasMore && feed.length > 0 && (
-              <div className="end-of-feed">
-                <p>You're all caught up! 🎉</p>
-                <p className="text-sm">Check back later for new posts</p>
-              </div>
-            )}
-          </>
-        )}
+      {/* Feed Component */}
+      <div className="feed-section">
+        <Feed />
       </div>
 
       {/* Create Post Modal - Only shows when clicked */}
