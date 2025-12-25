@@ -7,20 +7,19 @@ import {
   Video as VideoIcon, FileText, PieChart, 
   Camera, Music, Gift
 } from 'react-feather';
-import { PostStorage } from '../../utils/PostStorage';
+import PostService from '../../services/PostService';
 import './CreatePost.css';
 
 const CreatePost = ({ onPostCreated }) => {
   const [content, setContent] = useState('');
   const [privacy, setPrivacy] = useState('friends');
   const [media, setMedia] = useState([]);
-  const [hashtags, setHashtags] = useState([]);
   const [showPrivacyMenu, setShowPrivacyMenu] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [location, setLocation] = useState('');
   const [feeling, setFeeling] = useState('');
   
-  const { user } = useSelector(state => state.auth);
+  const { user } = useSelector(state => state.auth || {});
   const fileInputRef = useRef(null);
   const textareaRef = useRef(null);
 
@@ -35,32 +34,31 @@ const CreatePost = ({ onPostCreated }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!content.trim() && media.length === 0) return;
+    if (!content.trim() && media.length === 0) {
+      alert('Please add some content or media to your post.');
+      return;
+    }
     
     setIsLoading(true);
     
     try {
       const postData = {
-        user: {
-          id: user.id,
-          username: user.username,
-          profilePicture: user.profilePicture,
-          isVerified: user.isVerified
-        },
         content: content.trim(),
         privacy,
-        media: media.map(m => ({ url: m.preview, type: m.type })),
-        hashtags: extractHashtags(content),
+        media: media.map(m => ({ 
+          url: m.preview, 
+          type: m.type,
+          name: m.file?.name 
+        })),
         location: location || null,
         feeling: feeling || null
       };
       
-      const newPost = PostStorage.savePost(postData);
+      const newPost = PostService.createPost(postData);
       
       // Clear form
       setContent('');
       setMedia([]);
-      setHashtags([]);
       setLocation('');
       setFeeling('');
       
@@ -71,6 +69,11 @@ const CreatePost = ({ onPostCreated }) => {
       
       // Show success message
       alert('Post created successfully!');
+      
+      // Close modal if needed
+      if (window.closeCreatePostModal) {
+        window.closeCreatePostModal();
+      }
       
     } catch (error) {
       console.error('Error creating post:', error);
@@ -125,27 +128,48 @@ const CreatePost = ({ onPostCreated }) => {
     return option ? option.label : 'Public';
   };
 
+  // Get current user from PostService if Redux user is not available
+  const getCurrentUser = () => {
+    if (user && user.id) {
+      return user;
+    }
+    return PostService.getCurrentUser();
+  };
+
+  const currentUser = getCurrentUser();
+
   return (
     <div className="create-post-container">
       <div className="create-post-header">
         <h3>Create Post</h3>
-        <button className="close-btn">
+        <button 
+          className="close-btn"
+          onClick={() => {
+            if (window.closeCreatePostModal) {
+              window.closeCreatePostModal();
+            }
+          }}
+        >
           <X size={20} />
         </button>
       </div>
       
       <div className="create-post-user">
         <img 
-          src={user?.profilePicture || '/default-avatar.png'} 
-          alt={user?.username}
+          src={currentUser?.profilePicture || '/default-avatar.png'} 
+          alt={currentUser?.username}
           className="user-avatar"
+          onError={(e) => {
+            e.target.src = '/default-avatar.png';
+          }}
         />
         <div className="user-info">
-          <div className="user-name">{user?.username}</div>
+          <div className="user-name">{currentUser?.username || 'User'}</div>
           <div className="privacy-selector">
             <button 
               className="privacy-btn"
               onClick={() => setShowPrivacyMenu(!showPrivacyMenu)}
+              type="button"
             >
               {getPrivacyIcon(privacy)}
               <span>{getPrivacyLabel(privacy)}</span>
@@ -162,6 +186,7 @@ const CreatePost = ({ onPostCreated }) => {
                       setPrivacy(option.value);
                       setShowPrivacyMenu(false);
                     }}
+                    type="button"
                   >
                     <div className="privacy-icon">{option.icon}</div>
                     <div className="privacy-info">
@@ -183,7 +208,7 @@ const CreatePost = ({ onPostCreated }) => {
             value={content}
             onChange={(e) => setContent(e.target.value)}
             onKeyDown={handleTextareaKeyDown}
-            placeholder={`What's on your mind, ${user?.username || 'User'}?`}
+            placeholder={`What's on your mind, ${currentUser?.username || 'User'}?`}
             className="post-textarea"
             rows="4"
           />
@@ -236,22 +261,43 @@ const CreatePost = ({ onPostCreated }) => {
                 type="button"
                 className="add-option"
                 onClick={() => fileInputRef.current.click()}
+                title="Add photo/video"
               >
                 <Image size={20} />
               </button>
-              <button type="button" className="add-option">
-                <VideoIcon size={20} />
+              <button 
+                type="button" 
+                className="add-option"
+                title="Tag people"
+              >
+                <Users size={20} />
               </button>
-              <button type="button" className="add-option">
+              <button 
+                type="button" 
+                className="add-option"
+                title="Feeling/activity"
+              >
                 <Smile size={20} />
               </button>
-              <button type="button" className="add-option">
+              <button 
+                type="button" 
+                className="add-option"
+                title="Check in"
+              >
                 <MapPin size={20} />
               </button>
-              <button type="button" className="add-option">
+              <button 
+                type="button" 
+                className="add-option"
+                title="Life event"
+              >
                 <Calendar size={20} />
               </button>
-              <button type="button" className="add-option">
+              <button 
+                type="button" 
+                className="add-option"
+                title="Create poll"
+              >
                 <PieChart size={20} />
               </button>
             </div>
