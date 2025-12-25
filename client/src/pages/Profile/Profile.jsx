@@ -11,8 +11,6 @@ import {
   Users,
   UserPlus,
   Globe,
-  Archive,
-  Activity,
   Copy,
   Flag,
   Settings,
@@ -28,15 +26,11 @@ import {
   Heart,
   Send,
   Coffee,
-  Baby,
-  Trophy,
   Clock,
   Feather,
   Zap,
   Mail,
   Bell,
-  Music,
-  Bookmark,
   MessageCircle,
   Share2,
   Lock,
@@ -309,9 +303,7 @@ const Profile = () => {
     }},
     { icon: <Send size={18} />, label: 'Share Profile as Message', action: () => console.log('Share as message') },
     { icon: <Globe size={18} />, label: 'Profile Status', action: () => console.log('Profile Status') },
-    { icon: <Archive size={18} />, label: 'Archive', action: () => console.log('Archive') },
-    { icon: <Activity size={18} />, label: 'Activity Log', action: () => console.log('Activity Log') },
-    { icon: <Settings size={18} />, label: 'Settings', action: () => navigate('/settings') },
+    { icon: <Flag size={18} />, label: 'Settings', action: () => navigate('/settings') },
   ];
 
   const tabs = [
@@ -327,8 +319,8 @@ const Profile = () => {
     { icon: <Heart size={18} />, label: 'Family & Relationships', color: '#FF5555' },
     { icon: <Home size={18} />, label: 'Home & Living', color: '#FF9900' },
     { icon: <Send size={18} />, label: 'Travel', color: '#8B9DC3' },
-    { icon: <Trophy size={18} />, label: 'Milestone & Achievements', color: '#FFCC00' },
-    { icon: <Baby size={18} />, label: 'Health & Wellness', color: '#6B8E23' },
+    { icon: <Award size={18} />, label: 'Milestone & Achievements', color: '#FFCC00' },
+    { icon: <Heart size={18} />, label: 'Health & Wellness', color: '#6B8E23' },
     { icon: <Clock size={18} />, label: 'Remembrance', color: '#808080' },
     { icon: <Coffee size={18} />, label: 'Interests & Activities', color: '#A52A2A' },
     { icon: <Feather size={18} />, label: 'Create Your Own', color: '#9C27B0' },
@@ -400,7 +392,6 @@ const Profile = () => {
               <button 
                 className="upload-option-btn"
                 onClick={() => {
-                  // In real app, open camera
                   coverPhotoInputRef.current?.click();
                 }}
                 disabled={isUploading}
@@ -490,7 +481,6 @@ const Profile = () => {
                 <button 
                   className="upload-option-btn"
                   onClick={() => {
-                    // In real app, open camera
                     profilePicInputRef.current?.click();
                   }}
                   disabled={isUploading}
@@ -581,8 +571,7 @@ const Profile = () => {
             <Plus size={18} />
             <span>Add to story</span>
           </button>
-
-                    <button className="action-btn secondary" onClick={() => navigate('/edit-profile')}>
+          <button className="action-btn secondary" onClick={() => navigate('/edit-profile')}>
             <Edit size={18} />
             <span>Edit profile</span>
           </button>
@@ -593,8 +582,7 @@ const Profile = () => {
             >
               <MoreVertical size={18} />
             </button>
-            
-            {showMoreMenu && (
+                  {showMoreMenu && (
               <div className="more-menu-dropdown">
                 {moreMenuOptions.map((option, index) => (
                   <button
