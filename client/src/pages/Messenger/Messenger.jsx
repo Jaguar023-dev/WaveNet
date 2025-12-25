@@ -3,7 +3,7 @@ import { useSelector } from 'react-redux';
 import { 
   Send, Paperclip, Smile, Video, Phone, MoreVertical, Search, 
   Image as ImageIcon, Mic, X, Camera, MapPin, File, Calendar,
-  Check, CheckCheck, Trash2, Edit2, Heart, ThumbsUp
+  Check, CheckCircle, Trash2, Edit2, Heart, ThumbsUp
 } from 'react-feather';
 import MessageService from '../../services/MessageService';
 import './Messenger.css';
