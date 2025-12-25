@@ -2,20 +2,16 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import {
   Heart, MessageCircle, Share2, Bookmark, MoreHorizontal,
-  ThumbsUp, Smile, Frown, Heart as HeartIcon, AlertTriangle,
+  ThumbsUp, Smile, Heart as HeartIcon,
   Globe, Users, Lock, Send, CheckCircle,
-  Repeat, BarChart, Eye, TrendingUp, Users as UsersIcon,
-  Edit, Trash2, Flag, Link, ExternalLink,
+  Repeat, BarChart, Eye, Users as UsersIcon,
+  Edit, Trash2, Flag, Link,
   Image, Video, MapPin, Calendar,
-  ChevronDown, ChevronUp, X, Filter,
+  ChevronDown, ChevronUp, X,
   Download, Maximize2, Minimize2
 } from 'react-feather';
+import PostService from '../../services/PostService';
 import './Post.css';
-
-// Local storage helper functions
-const POSTS_STORAGE_KEY = 'facebook_posts';
-const USER_REACTIONS_KEY = 'user_reactions';
-const USER_COMMENTS_KEY = 'user_comments';
 
 const Post = ({ post, isReshare = false, originalPost = null }) => {
   const [showReactions, setShowReactions] = useState(false);
@@ -29,6 +25,7 @@ const Post = ({ post, isReshare = false, originalPost = null }) => {
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [shareCount, setShareCount] = useState(0);
   const [viewCount, setViewCount] = useState(0);
+  const [reactionCount, setReactionCount] = useState(0);
   const [isOwner, setIsOwner] = useState(false);
   const [showOptionsMenu, setShowOptionsMenu] = useState(false);
   
@@ -48,6 +45,8 @@ const Post = ({ post, isReshare = false, originalPost = null }) => {
 
   // Initialize post data
   useEffect(() => {
+    if (!post || !post.id) return;
+    
     loadPostData();
     checkIfOwner();
     loadUserInteractions();
@@ -66,101 +65,66 @@ const Post = ({ post, isReshare = false, originalPost = null }) => {
   }, []);
 
   const loadPostData = () => {
-    // Load from local storage or use props
-    const storedPosts = JSON.parse(localStorage.getItem(POSTS_STORAGE_KEY)) || [];
-    const storedPost = storedPosts.find(p => p.id === post.id) || post;
+    if (!post.id) return;
     
-    setComments(storedPost.comments || []);
-    setShareCount(storedPost.shares || 0);
-    setViewCount(storedPost.views || Math.floor(Math.random() * 1000) + 100); // Simulated views
+    // Get post data from PostService
+    const postData = PostService.getAllPosts().find(p => p.id === post.id) || post;
+    
+    setComments(postData.comments || []);
+    setShareCount(postData.shares || 0);
+    setViewCount(postData.views || 0);
+    setReactionCount(postData.reactionCount || 0);
   };
 
   const checkIfOwner = () => {
+    if (!user || !post.user) return;
     setIsOwner(user?.id === post.user?.id || user?.username === post.user?.username);
   };
 
   const loadUserInteractions = () => {
-    const userReactions = JSON.parse(localStorage.getItem(USER_REACTIONS_KEY)) || {};
-    const userSavedPosts = JSON.parse(localStorage.getItem('saved_posts')) || [];
+    if (!post.id) return;
     
-    if (userReactions[post.id]) {
-      setUserReaction(userReactions[post.id]);
+    const userReaction = PostService.getUserReaction(post.id);
+    const isSaved = PostService.isPostSaved(post.id);
+    
+    if (userReaction) {
+      setUserReaction(userReaction);
       setIsLiked(true);
     }
     
-    if (userSavedPosts.includes(post.id)) {
-      setIsSaved(true);
-    }
+    setIsSaved(isSaved);
   };
 
   const incrementViewCount = () => {
-    // Simulate view tracking
-    const newViews = viewCount + 1;
-    setViewCount(newViews);
-    
-    // Update in local storage
-    updatePostInStorage({ views: newViews });
-  };
-
-  const updatePostInStorage = (updates) => {
-    const storedPosts = JSON.parse(localStorage.getItem(POSTS_STORAGE_KEY)) || [];
-    const postIndex = storedPosts.findIndex(p => p.id === post.id);
-    
-    if (postIndex !== -1) {
-      storedPosts[postIndex] = { ...storedPosts[postIndex], ...updates };
-      localStorage.setItem(POSTS_STORAGE_KEY, JSON.stringify(storedPosts));
-    }
+    if (!post.id) return;
+    const newViewCount = PostService.incrementViewCount(post.id);
+    setViewCount(newViewCount);
   };
 
   const handleReaction = (reactionType) => {
-    const userReactions = JSON.parse(localStorage.getItem(USER_REACTIONS_KEY)) || {};
+    if (!post.id) return;
     
-    if (userReaction === reactionType) {
-      // Remove reaction
-      delete userReactions[post.id];
-      setUserReaction(null);
-      setIsLiked(false);
-    } else {
-      // Add new reaction
-      userReactions[post.id] = reactionType;
-      setUserReaction(reactionType);
-      setIsLiked(true);
-      
-      // Update post reactions count
-      const reactionCount = (post.reactionCount || 0) + 1;
-      updatePostInStorage({ reactionCount });
-    }
-    
-    localStorage.setItem(USER_REACTIONS_KEY, JSON.stringify(userReactions));
+    const result = PostService.reactToPost(post.id, reactionType);
+    setUserReaction(result.userReaction);
+    setIsLiked(!!result.userReaction);
+    setReactionCount(result.reactionCount);
     setShowReactions(false);
   };
 
   const handleComment = () => {
-    if (comment.trim()) {
-      const newComment = {
-        id: Date.now().toString(),
-        user: {
-          id: user?.id,
-          username: user?.username,
-          profilePicture: user?.profilePicture,
-          isVerified: user?.isVerified
-        },
-        content: comment,
-        createdAt: new Date().toISOString(),
-        likes: 0
-      };
-      
-      const updatedComments = [...comments, newComment];
-      setComments(updatedComments);
+    if (!post.id || !comment.trim()) return;
+    
+    try {
+      const newComment = PostService.addComment(post.id, comment);
+      setComments(prev => [...prev, newComment]);
       setComment('');
       
-      // Save to local storage
-      updatePostInStorage({ comments: updatedComments });
-      
-      // Focus back on input
       if (commentInputRef.current) {
         commentInputRef.current.focus();
       }
+    } catch (error) {
+      console.error('Error adding comment:', error);
+      alert('Failed to add comment. Please try again.');
     }
   };
 
@@ -173,96 +137,62 @@ const Post = ({ post, isReshare = false, originalPost = null }) => {
     });
     
     setComments(updatedComments);
-    updatePostInStorage({ comments: updatedComments });
+    
+    // Update in PostService (you might want to add this method to PostService)
+    const postData = PostService.getAllPosts().find(p => p.id === post.id);
+    if (postData) {
+      postData.comments = updatedComments;
+      // You might need to add an updateComments method to PostService
+    }
   };
 
   const handleShare = (shareType = 'timeline') => {
-    const newShare = {
-      id: Date.now().toString(),
-      userId: user?.id,
-      type: shareType,
-      timestamp: new Date().toISOString()
-    };
+    if (!post.id) return;
     
-    const newShareCount = shareCount + 1;
-    setShareCount(newShareCount);
-    
-    // Update in storage
-    updatePostInStorage({ 
-      shares: newShareCount,
-      shareHistory: [...(post.shareHistory || []), newShare]
-    });
-    
-    // If resharing to own profile, create a new post
     if (shareType === 'profile') {
-      resharePost();
+      try {
+        const resharedPost = PostService.resharePost(post.id);
+        setShareCount(prev => prev + 1);
+        alert('Post reshared to your profile!');
+        
+        // Refresh feed if callback exists
+        if (window.refreshFeed) {
+          window.refreshFeed();
+        }
+      } catch (error) {
+        console.error('Error resharing post:', error);
+        alert('Failed to reshare post. Please try again.');
+      }
+    } else if (shareType === 'copy') {
+      navigator.clipboard.writeText(window.location.origin + '/post/' + post.id)
+        .then(() => alert('Link copied to clipboard!'))
+        .catch(() => alert('Failed to copy link.'));
     }
     
     setShowShareMenu(false);
   };
 
-  const resharePost = () => {
-    const resharePostData = {
-      id: `reshare_${Date.now()}`,
-      user: {
-        id: user?.id,
-        username: user?.username,
-        profilePicture: user?.profilePicture,
-        isVerified: user?.isVerified
-      },
-      content: post.content,
-      originalPost: {
-        id: post.id,
-        user: post.user,
-        content: post.content
-      },
-      isReshare: true,
-      createdAt: new Date().toISOString(),
-      privacy: 'friends',
-      media: post.media,
-      hashtags: post.hashtags,
-      reactionCount: 0,
-      comments: [],
-      shares: 0,
-      views: 0
-    };
-    
-    // Save to local storage
-    const storedPosts = JSON.parse(localStorage.getItem(POSTS_STORAGE_KEY)) || [];
-    storedPosts.unshift(resharePostData);
-    localStorage.setItem(POSTS_STORAGE_KEY, JSON.stringify(storedPosts));
-    
-    // Show success message or trigger update
-    alert('Post reshared to your profile!');
-  };
-
   const handleSavePost = () => {
-    const savedPosts = JSON.parse(localStorage.getItem('saved_posts')) || [];
+    if (!post.id) return;
     
     if (isSaved) {
-      // Remove from saved
-      const index = savedPosts.indexOf(post.id);
-      if (index > -1) {
-        savedPosts.splice(index, 1);
-      }
+      PostService.unsavePost(post.id);
+      setIsSaved(false);
     } else {
-      // Add to saved
-      savedPosts.push(post.id);
+      PostService.savePost(post.id);
+      setIsSaved(true);
     }
-    
-    setIsSaved(!isSaved);
-    localStorage.setItem('saved_posts', JSON.stringify(savedPosts));
   };
 
   const handleDeletePost = () => {
+    if (!post.id) return;
+    
     if (window.confirm('Are you sure you want to delete this post?')) {
-      const storedPosts = JSON.parse(localStorage.getItem(POSTS_STORAGE_KEY)) || [];
-      const updatedPosts = storedPosts.filter(p => p.id !== post.id);
-      localStorage.setItem(POSTS_STORAGE_KEY, JSON.stringify(updatedPosts));
+      PostService.deletePost(post.id);
       
       // Trigger parent component to remove post
-      if (window.postDeletedCallback) {
-        window.postDeletedCallback(post.id);
+      if (window.onPostDeleted) {
+        window.onPostDeleted(post.id);
       }
       
       setShowOptionsMenu(false);
@@ -270,6 +200,8 @@ const Post = ({ post, isReshare = false, originalPost = null }) => {
   };
 
   const formatTime = (date) => {
+    if (!date) return 'Just now';
+    
     const now = new Date();
     const postDate = new Date(date);
     const diffMs = now - postDate;
@@ -315,30 +247,40 @@ const Post = ({ post, isReshare = false, originalPost = null }) => {
 
   // Generate post insights data
   const generateInsights = () => {
-    const engagementRate = ((comments.length + (post.reactionCount || 0)) / viewCount * 100).toFixed(1);
-    const sharesPerView = (shareCount / viewCount * 100).toFixed(1);
+    if (!post.id) return null;
+    
+    const insights = PostService.getPostInsights(post.id);
+    if (insights) return insights;
+    
+    // Fallback if PostService doesn't have insights
+    const engagementRate = ((comments.length + reactionCount) / (viewCount || 1) * 100).toFixed(1);
+    const sharesPerView = (shareCount / (viewCount || 1) * 100).toFixed(1);
     
     return {
-      reach: viewCount + Math.floor(Math.random() * 500), // Simulated organic reach
-      engagement: comments.length + (post.reactionCount || 0),
+      reach: viewCount || 0,
+      engagement: comments.length + reactionCount,
       engagementRate: `${engagementRate}%`,
       shares: shareCount,
-      sharesPerView: `${sharesPerView}%`,
-      topLocations: ['United States', 'India', 'UK', 'Canada'],
-      demographic: {
-        male: Math.floor(Math.random() * 30) + 40,
-        female: Math.floor(Math.random() * 30) + 40,
+      shareRate: `${sharesPerView}%`,
+      comments: comments.length,
+      reactions: reactionCount,
+      demographics: {
+        locations: ['United States', 'India', 'UK', 'Canada'],
         ageGroups: {
-          '18-24': Math.floor(Math.random() * 30),
-          '25-34': Math.floor(Math.random() * 40),
-          '35-44': Math.floor(Math.random() * 20),
-          '45+': Math.floor(Math.random() * 10)
+          '18-24': Math.floor(Math.random() * 30) + 20,
+          '25-34': Math.floor(Math.random() * 40) + 30,
+          '35-44': Math.floor(Math.random() * 20) + 15,
+          '45+': Math.floor(Math.random() * 10) + 5
         }
       }
     };
   };
 
   const insights = generateInsights();
+
+  if (!post || !post.id) {
+    return <div className="post-container">Post not found</div>;
+  }
 
   return (
     <div className={`post-container ${isReshare ? 'reshare-post' : ''}`}>
@@ -507,11 +449,11 @@ const Post = ({ post, isReshare = false, originalPost = null }) => {
                   {reaction.emoji}
                 </span>
               ))}
-              {post.reactionCount > 3 && (
-                <span className="reaction-count">+{post.reactionCount - 3}</span>
+              {reactionCount > 3 && (
+                <span className="reaction-count">+{reactionCount - 3}</span>
               )}
             </div>
-            <span>{post.reactionCount || 0}</span>
+            <span>{reactionCount || 0}</span>
           </div>
           <div className="comments-shares">
             <span>{comments.length} comments</span>
@@ -527,7 +469,7 @@ const Post = ({ post, isReshare = false, originalPost = null }) => {
       </div>
 
       {/* Post Insights (Owner only) */}
-      {showInsights && isOwner && (
+      {showInsights && isOwner && insights && (
         <div className="post-insights">
           <div className="insights-header">
             <h4>Post Insights</h4>
@@ -563,7 +505,7 @@ const Post = ({ post, isReshare = false, originalPost = null }) => {
               <div className="insight-content">
                 <h5>Shares</h5>
                 <p className="insight-value">{insights.shares}</p>
-                <p className="insight-label">{insights.sharesPerView} share rate</p>
+                <p className="insight-label">{insights.shareRate} share rate</p>
               </div>
             </div>
           </div>
@@ -586,7 +528,7 @@ const Post = ({ post, isReshare = false, originalPost = null }) => {
             <span>{userReaction ? reactions.find(r => r.type === userReaction)?.label : 'Like'}</span>
           </button>
           
-                    <button 
+          <button 
             className={`action-btn ${showComments ? 'active' : ''}`}
             onClick={() => {
               setShowComments(!showComments);
@@ -644,7 +586,7 @@ const Post = ({ post, isReshare = false, originalPost = null }) => {
           <div className="share-menu">
             <div className="share-options">
               <button className="share-option" onClick={() => handleShare('profile')}>
-                <div className="share-icon">
+                             <div className="share-icon">
                   <Users size={20} />
                 </div>
                 <div className="share-info">
