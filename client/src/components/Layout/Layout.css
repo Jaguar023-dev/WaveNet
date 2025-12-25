@@ -1,4 +1,4 @@
-/* client/src/components/Layout/Layout.css */
+/* client/src/components/Layout/Layout.css - FIXED VERSION */
 .facebook-layout {
   min-height: 100vh;
   background-color: #f0f2f5;
@@ -327,22 +327,21 @@
   max-width: 1200px;
   margin: 0 auto;
   display: flex;
-  justify-content: space-between;
+  justify-content: center; /* CHANGED: Center navigation items */
   padding: 0 16px;
 }
 
 .nav-item {
-  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 12px 0 10px;
+  padding: 12px 16px;
   color: #65676b;
   text-decoration: none;
   position: relative;
   transition: all 0.2s;
   border-bottom: 3px solid transparent;
-  max-width: 120px;
+  min-width: 100px;
 }
 
 .nav-item:hover {
@@ -388,35 +387,61 @@
 }
 
 /* ===== MAIN CONTENT ===== */
+/* CHANGED: Simplified to single centered column */
 .main-content {
   max-width: 1200px;
   margin: 20px auto;
   padding: 0 16px;
-  display: grid;
-  grid-template-columns: 280px 1fr 280px;
-  gap: 20px;
   min-height: calc(100vh - 120px);
+  width: 100%;
+}
+
+/* Content Container for centered feed */
+.content-container {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+/* Feed wrapper - Facebook-like centered width */
+.feed-wrapper {
+  width: 100%;
+  max-width: 680px; /* Facebook's feed width */
+  margin: 0 auto;
 }
 
 /* Responsive Design */
-@media (max-width: 1100px) {
+@media (max-width: 1200px) {
+  .header-container,
+  .nav-container,
   .main-content {
-    grid-template-columns: 280px 1fr;
+    max-width: 1000px;
+  }
+}
+
+@media (max-width: 1100px) {
+  .nav-item {
+    min-width: 90px;
+    padding: 12px 12px;
   }
 }
 
 @media (max-width: 900px) {
-  .main-content {
-    grid-template-columns: 1fr;
-  }
-  
   .nav-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
     padding: 0 8px;
+    justify-content: flex-start;
   }
   
   .nav-item {
-    max-width: none;
-    padding: 12px 8px;
+    min-width: 80px;
+    padding: 12px 10px;
+    flex-shrink: 0;
+  }
+  
+  .feed-wrapper {
+    max-width: 600px;
   }
 }
 
@@ -439,14 +464,21 @@
   }
   
   .nav-container {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
     padding: 0 4px;
   }
   
   .nav-item {
-    min-width: 80px;
-    flex-shrink: 0;
+    min-width: 70px;
+    padding: 12px 8px;
+  }
+  
+  .feed-wrapper {
+    max-width: 100%;
+    padding: 0 8px;
+  }
+  
+  .main-content {
+    padding: 0 12px;
   }
 }
 
@@ -456,11 +488,20 @@
   }
   
   .main-content {
-    padding: 0 12px;
+    padding: 0 8px;
   }
   
   .menu-grid {
     grid-template-columns: 1fr;
+  }
+  
+  .nav-item {
+    min-width: 60px;
+    padding: 12px 6px;
+  }
+  
+  .nav-label {
+    font-size: 11px;
   }
 }
 
@@ -525,7 +566,7 @@
 
 .nav-item:hover::after,
 .nav-item.active::after {
-  width: 80%;
+  width: 70%;
 }
 
 /* Focus States */
@@ -535,4 +576,15 @@
 .menu-item:focus-visible {
   outline: 2px solid #1877f2;
   outline-offset: 2px;
+}
+
+/* Center the navigation icons like Facebook */
+@media (min-width: 769px) {
+  .nav-container {
+    gap: 0;
+  }
+  
+  .nav-item {
+    margin: 0 15px;
+  }
 }
